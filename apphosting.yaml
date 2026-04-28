@@ -1,0 +1,17 @@
+# Firebase App Hosting Configuration
+# This file automatically injects the public Firebase keys into the browser build.
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyB2FbO0XkpYSQMT4g-VM66asoLOji7gxIE
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: solgine-3a3c6.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: solgine-3a3c6
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: solgine-3a3c6.firebasestorage.app
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: 1082524280764
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:1082524280764:web:102cd5422b5bed6d73adb9
+  - variable: NEXT_PUBLIC_BASE_URL
+    value: https://solgine--solgine-3a3c6.us-central1.hosted.app
