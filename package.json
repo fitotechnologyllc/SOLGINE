@@ -1,5 +1,5 @@
 {
-  "name": "solgine-app",
+  "name": "next-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,9 +9,33 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@firebase/app": "^0.14.11",
+    "@firebase/auth": "^1.13.0",
+    "@firebase/firestore": "^4.14.0",
+    "@firebase/functions": "^0.13.3",
+    "@firebase/storage": "^0.14.2",
+    "@solana/wallet-adapter-base": "^0.9.27",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/wallet-adapter-wallets": "^0.19.38",
+    "@solana/web3.js": "^1.98.4",
+    "@tanstack/react-query": "^5.100.5",
+    "@tanstack/react-table": "^8.21.3",
+    "clsx": "^2.1.1",
+    "firebase": "^12.12.1",
+    "firebase-admin": "^13.8.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.11.0",
     "next": "16.2.4",
+    "openrouter-sdk": "^1.0.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-hot-toast": "^2.6.0",
+    "stripe": "^22.1.0",
+    "tailwind-merge": "^3.5.0",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .neon-glow-purple {
+      box-shadow: 0 0 20px rgba(153, 69, 255, 0.3);
+    }
+    .neon-glow-cyan {
+      box-shadow: 0 0 15px rgba(0, 194, 255, 0.2);
+    }
+    body {
+      background-color: #131313;
+      color: #e5e2e1;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed-dim": "#d8b9ff",
+            "tertiary-fixed-dim": "#75d1ff",
+            "on-tertiary-fixed": "#001e2b",
+            "inverse-on-surface": "#313030",
+            "on-secondary-container": "#00653b",
+            "on-background": "#e5e2e1",
+            "surface-container-high": "#2a2a2a",
+            "primary-fixed": "#eddcff",
+            "primary": "#d8b9ff",
+            "on-surface-variant": "#cec2d8",
+            "surface-bright": "#3a3939",
+            "tertiary-fixed": "#c2e8ff",
+            "on-surface": "#e5e2e1",
+            "background": "#131313",
+            "surface-tint": "#d8b9ff",
+            "surface-container-low": "#1c1b1b",
+            "secondary": "#a0ffc3",
+            "on-primary-fixed": "#290055",
+            "surface-container": "#201f1f",
+            "on-error": "#690005",
+            "on-secondary-fixed": "#002110",
+            "surface-container-highest": "#353534",
+            "on-tertiary-container": "#ffffff",
+            "on-error-container": "#ffdad6",
+            "error-container": "#93000a",
+            "on-tertiary-fixed-variant": "#004d67",
+            "on-tertiary": "#003548",
+            "on-primary-fixed-variant": "#6300bb",
+            "error": "#ffb4ab",
+            "primary-container": "#9945ff",
+            "tertiary-container": "#0080a9",
+            "outline": "#978da1",
+            "on-secondary": "#00391f",
+            "outline-variant": "#4c4355",
+            "inverse-surface": "#e5e2e1",
+            "surface-container-lowest": "#0e0e0e",
+            "on-primary-container": "#ffffff",
+            "inverse-primary": "#7f21e5",
+            "secondary-container": "#00ec91",
+            "tertiary": "#75d1ff",
+            "secondary-fixed": "#56ffa8",
+            "on-secondary-fixed-variant": "#00522f",
+            "surface-dim": "#131313",
+            "secondary-fixed-dim": "#00e38b",
+            "surface-variant": "#353534",
+            "surface": "#131313",
+            "on-primary": "#450086"
+          },
+          "fontFamily": {
+            "stat-value": ["Space Grotesk"],
+            "h3": ["Space Grotesk"],
+            "h2": ["Space Grotesk"],
+            "label-caps": ["Space Grotesk"],
+            "h1": ["Space Grotesk"],
+            "body-lg": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "stat-value": ["20px", {"lineHeight": "1", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+            "h3": ["24px", {"lineHeight": "1.3", "letterSpacing": "0", "fontWeight": "600"}],
+            "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700"}],
+            "h1": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="font-body-md bg-background text-on-background overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col h-screen sticky top-0 left-0 bg-zinc-950/80 backdrop-blur-3xl docked left-0 w-64 border-r border-white/10 z-50">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div>
+<h1 class="text-xl font-black text-white font-space-grotesk">SOLGINE Studio</h1>
+<p class="text-[10px] text-zinc-500 font-space-grotesk tracking-widest uppercase">Engine v2.4</p>
+</div>
+</div>
+<nav class="space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-space-grotesk">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-transparent border-l-4 border-purple-500 text-white font-bold transition-all duration-200 translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-space-grotesk">Studio</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+<span class="font-space-grotesk">Collection</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span class="font-space-grotesk">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-space-grotesk">Settings</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-6">
+<button class="w-full py-4 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-400 text-white font-bold font-space-grotesk shadow-[0_0_20px_rgba(153,69,255,0.3)] hover:scale-[1.02] active:scale-95 transition-all">
+        Deploy Project
+      </button>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<main class="flex-1 flex flex-col h-screen relative">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-0 lg:left-64 z-40 bg-zinc-950/40 backdrop-blur-xl border-b border-white/10 px-8 h-16 flex justify-between items-center shadow-[0_0_20px_rgba(153,69,255,0.1)]">
+<div class="flex items-center gap-4">
+<h2 class="font-space-grotesk text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-cyan-400 tracking-tight">CARD CREATOR</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-zinc-400">
+<button class="hover:text-white transition-all"><span class="material-symbols-outlined">account_balance_wallet</span></button>
+<button class="hover:text-white transition-all"><span class="material-symbols-outlined">notifications</span></button>
+</div>
+<div class="w-8 h-8 rounded-full border border-purple-500/50 overflow-hidden">
+<img alt="Player Profile" class="w-full h-full object-cover" data-alt="stylized 3D avatar of a futuristic cyberpunk character with neon purple hair and metallic visor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJMB7znl_r362Unyr-A7q5VztvY6xNfJykbS9COMSUpyRZLcBzp_H3iGd5ZVwykV9-BQTpZSqfbTCtNyqUri6Vkz_yEZqmVzoQxclz-s60BiNuhnXjukaGOuJl8nrhBTClqmJ22CiFA9osyWf1lrLif5QQYs_3DWN4stjChm7FkXuf9h3Tn-tub_zzeLDBn1tNOD3tgTCnTdsUoh12Tcf8XE_dTkxKrATwC1AQyW1Q5UddQGtlLV-efGFcZyJk8wLdoGtkd32XU1Q"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="pt-16 flex-1 flex flex-col lg:flex-row overflow-hidden bg-background">
+<!-- LEFT: Form Editor -->
+<section class="w-full lg:w-[450px] overflow-y-auto border-r border-white/5 p-8 custom-scrollbar">
+<div class="space-y-8">
+<!-- Identity Section -->
+<div class="space-y-4">
+<h3 class="font-h3 text-h3 text-white">Identity</h3>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-zinc-500 uppercase">Card Name</label>
+<input class="w-full bg-zinc-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-body-md" placeholder="Enter card name..." type="text" value="Void-Walker Xero"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-zinc-500 uppercase">Rarity</label>
+<select class="w-full bg-zinc-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition-all font-body-md appearance-none">
+<option>Common</option>
+<option>Rare</option>
+<option>Epic</option>
+<option selected="">Legendary</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-zinc-500 uppercase">Class</label>
+<select class="w-full bg-zinc-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition-all font-body-md appearance-none">
+<option>Striker</option>
+<option>Vanguard</option>
+<option selected="">Assassin</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Stats Section -->
+<div class="space-y-4">
+<h3 class="font-h3 text-h3 text-white">Attributes</h3>
+<div class="grid grid-cols-2 gap-6">
+<div class="p-4 glass-panel rounded-2xl space-y-3">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-red-400">ATTACK</span>
+<span class="font-stat-value text-stat-value text-white">88</span>
+</div>
+<div class="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-red-600 to-red-400" style="width: 88%"></div>
+</div>
+</div>
+<div class="p-4 glass-panel rounded-2xl space-y-3">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-cyan-400">DEFENSE</span>
+<span class="font-stat-value text-stat-value text-white">42</span>
+</div>
+<div class="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-cyan-600 to-cyan-400" style="width: 42%"></div>
+</div>
+</div>
+</div>
+<div class="space-y-4 pt-4">
+<div class="flex justify-between">
+<label class="font-label-caps text-label-caps text-zinc-500">ENERGY COST</label>
+<span class="text-white font-stat-value">5</span>
+</div>
+<input class="w-full accent-purple-500" max="10" min="1" type="range" value="5"/>
+</div>
+</div>
+<!-- Ability Builder -->
+<div class="space-y-4">
+<h3 class="font-h3 text-h3 text-white">Abilities</h3>
+<div class="space-y-3">
+<div class="p-4 glass-panel rounded-2xl border-l-4 border-purple-500 flex items-start gap-4">
+<span class="material-symbols-outlined text-purple-400">bolt</span>
+<div class="flex-1">
+<p class="font-body-md font-bold text-white mb-1">Quantum Leap</p>
+<p class="text-xs text-zinc-400">Teleport behind the furthest enemy and strike for 150% DMG.</p>
+</div>
+<button class="text-zinc-600 hover:text-error transition-colors"><span class="material-symbols-outlined">delete</span></button>
+</div>
+<button class="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl text-zinc-500 hover:border-purple-500 hover:text-purple-400 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-label-caps">Add Ability</span>
+</button>
+</div>
+</div>
+<!-- AI Generator -->
+<div class="pt-6">
+<button class="w-full py-6 rounded-2xl bg-zinc-950 border border-purple-500/50 flex flex-col items-center justify-center gap-2 group hover:bg-purple-500/5 transition-all relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-transparent opacity-50"></div>
+<span class="material-symbols-outlined text-purple-400 text-3xl mb-1 group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 1;">auto_fix_high</span>
+<span class="font-h3 text-white neon-glow-purple">AI GENERATE ART</span>
+<span class="text-[10px] text-zinc-500 tracking-[0.2em] uppercase font-space-grotesk">Uses 50 Energy Credits</span>
+</button>
+</div>
+</div>
+</section>
+<!-- RIGHT: Card Preview -->
+<section class="flex-1 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-background to-background flex items-center justify-center p-12 overflow-hidden">
+<!-- The Preview Card -->
+<div class="relative w-[380px] h-[540px] group">
+<!-- Outer Halo Glow -->
+<div class="absolute -inset-10 bg-purple-500/10 blur-[80px] rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>
+<!-- Card Container -->
+<div class="relative h-full w-full rounded-[32px] overflow-hidden border border-white/20 glass-panel shadow-2xl flex flex-col p-1">
+<!-- Card Header (Rarity Chip) -->
+<div class="absolute top-6 left-6 z-20">
+<span class="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-600 text-white font-space-grotesk font-black text-[10px] uppercase rounded-full shadow-lg tracking-widest">Legendary</span>
+</div>
+<div class="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-zinc-950/80 backdrop-blur-md border border-white/20 flex items-center justify-center">
+<span class="font-stat-value text-purple-400">5</span>
+</div>
+<!-- Art Frame -->
+<div class="relative h-3/5 rounded-[28px] overflow-hidden">
+<img alt="Card Art" class="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-700" data-alt="epic digital art of a celestial phantom rogue with glowing purple daggers standing in a cosmic void with stars and nebulas" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfG0hLpVGELunwuSpG1LQh4r3bafduueu2M6RWc80SK-DATE0N4YCGC38RfrXk5Z8gPhdi-J0pfz5pzg14qPSbjn5HB6fx1ad9MErZicMzoUuYQTXDQtjywuIjIRjL1Hdpgp3sM_z068jfK84aRCJCsvNY8VrQvBK5CwnENbs5srMsL6eG0GGeawS0hYzYOP0qmrPZ0QYGLg2VzNgfuji42TK6SVqcb2x8i8Z1ACvyWldfWJP9ntjnqSxMu3cQU6j2kuZztgHU5Xo"/>
+<div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
+<!-- Card Name Overlay -->
+<div class="absolute bottom-4 left-6 right-6">
+<h2 class="text-3xl font-black font-space-grotesk text-white tracking-tight drop-shadow-lg">VOID-WALKER XERO</h2>
+<p class="text-cyan-400 font-label-caps text-[10px] tracking-widest mt-1">ASSASSIN • PHANTOM REVENUE</p>
+</div>
+</div>
+<!-- Ability & Stats Area -->
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div class="space-y-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-purple-400 text-sm">bolt</span>
+<span class="font-space-grotesk font-bold text-sm text-zinc-200">QUANTUM LEAP</span>
+</div>
+<p class="text-xs text-zinc-400 font-body-md leading-relaxed">
+                  Teleport behind the furthest enemy and strike for 150% DMG. If this kills the target, reset cooldown and gain <span class="text-purple-400 font-bold">Phase</span>.
+                </p>
+</div>
+<!-- Footer Stats -->
+<div class="flex justify-between items-center pt-4 border-t border-white/5">
+<div class="flex flex-col">
+<span class="text-[9px] text-zinc-500 font-bold tracking-widest">ATK</span>
+<span class="text-2xl font-black font-space-grotesk text-red-500">88</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[9px] text-zinc-500 font-bold tracking-widest">DEF</span>
+<span class="text-2xl font-black font-space-grotesk text-cyan-400">42</span>
+</div>
+</div>
+</div>
+<!-- Card Shine Effect -->
+<div class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+</div>
+<!-- Tooltip Hint -->
+<div class="absolute -bottom-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 whitespace-nowrap">
+<span class="material-symbols-outlined text-zinc-500 text-xs">info</span>
+<span class="text-[10px] text-zinc-500 font-space-grotesk uppercase tracking-tighter">Art generated by Solgine AI • Neural Engine v2</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Contextual Control Bar -->
+<div class="h-20 border-t border-white/10 bg-zinc-950/80 backdrop-blur-3xl px-8 flex justify-between items-center">
+<div class="flex items-center gap-4">
+<button class="px-6 py-2 rounded-lg border border-white/10 text-zinc-400 font-label-caps hover:bg-white/5 transition-all">Discard Draft</button>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex flex-col items-end mr-4">
+<span class="text-[10px] text-zinc-500 uppercase tracking-widest">Project ID</span>
+<span class="text-xs text-cyan-400 font-mono">XERO-9945-FF</span>
+</div>
+<button class="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-700 text-white font-bold font-space-grotesk shadow-lg hover:scale-105 active:scale-95 transition-all">
+          Save & Mint Card
+        </button>
+</div>
+</div>
+</main>
+<!-- Mobile Navigation Layer (BottomNavBar) -->
+<nav class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md rounded-3xl border border-white/20 bg-zinc-950/30 backdrop-blur-2xl z-50 flex justify-around items-center h-20 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-purple-400 transition-transform duration-300 hover:-translate-y-1" href="#">
+<span class="material-symbols-outlined" data-icon="sports_esports">sports_esports</span>
+<span class="font-space-grotesk text-[10px] font-bold uppercase tracking-widest mt-1">Arena</span>
+</a>
+<a class="flex flex-col items-center justify-center text-cyan-400 bg-cyan-400/10 rounded-2xl px-4 py-1 border border-cyan-400/30 shadow-[0_0_15px_rgba(0,194,255,0.2)] transition-transform duration-300 hover:-translate-y-1" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="font-space-grotesk text-[10px] font-bold uppercase tracking-widest mt-1">Pack</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-purple-400 transition-transform duration-300 hover:-translate-y-1" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="font-space-grotesk text-[10px] font-bold uppercase tracking-widest mt-1">Market</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-purple-400 transition-transform duration-300 hover:-translate-y-1" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-space-grotesk text-[10px] font-bold uppercase tracking-widest mt-1">Profile</span>
+</a>
+</nav>
+</body></html>
