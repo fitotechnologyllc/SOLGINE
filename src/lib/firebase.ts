@@ -31,10 +31,18 @@ const firebaseConfig = {
 // Initialize Firebase gracefully
 let app;
 try {
+  // Try to initialize with the real config first
+  if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY && process.env.NODE_ENV === 'production') {
+     throw new Error("Missing env vars in prod build");
+  }
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 } catch (e) {
   // During build time on server environments without env vars, this will fail. We provide a dummy app.
-  app = initializeApp({ projectId: 'dummy-project' }, 'build-time-fallback');
+  app = initializeApp({ 
+    apiKey: 'dummy-api-key-for-build-time-only',
+    projectId: 'dummy-project', 
+    appId: '1:123456789:web:abcdef'
+  }, 'build-time-fallback');
 }
 
 const auth = getAuth(app);
