@@ -1,16 +1,22 @@
 import { NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { adminDb, adminAuth, admin } from '@/lib/firebase-admin';
+import { logEvent, logError } from '@/lib/monitor';
 
 export async function POST(req: Request) {
+  let userId = 'unknown';
   try {
+    if (!adminDb || !adminAuth) {
+      return NextResponse.json({ error: 'Server authentication module not configured' }, { status: 500 });
+    }
+
+    // 1. HARDENED AUTH: Verify ID Token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
-    const userId = decodedToken.uid;
+    userId = decodedToken.uid;
 
     const body = await req.json();
     const { deckId, name, cards: deckCards, isActive } = body;
@@ -19,128 +25,104 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Deck must have exactly 10 cards and a name.' }, { status: 400 });
     }
 
-    // 1. Validate Ownership
-    const playerCollRef = adminDb.collection('playerCollections').doc(userId);
-    const playerCollSnap = await playerCollRef.get();
-    
-    if (!playerCollSnap.exists) {
-      return NextResponse.json({ error: 'Collection not found' }, { status: 404 });
-    }
-
-    const ownedCards = playerCollSnap.data()?.cards || [];
-    const ownedMap: Record<string, number> = {};
-    ownedCards.forEach((c: any) => {
-      ownedMap[c.cardId] = (ownedMap[c.cardId] || 0) + c.count;
-    });
-
-    const deckMap: Record<string, number> = {};
-    for (const cardId of deckCards) {
-      deckMap[cardId] = (deckMap[cardId] || 0) + 1;
-    }
-
-    for (const [cardId, count] of Object.entries(deckMap)) {
-      if ((ownedMap[cardId] || 0) < count) {
-        return NextResponse.json({ error: `Insufficient copies of card ${cardId}` }, { status: 400 });
-      }
-    }
-
-    // 2. Fetch Card Data for Stats
-    const cardDocs = await Promise.all(
-      Object.keys(deckMap).map(id => adminDb.collection('cards').doc(id).get())
-    );
-    
-    const cardDataMap: Record<string, any> = {};
-    cardDocs.forEach(doc => {
-      if (doc.exists) cardDataMap[doc.id] = doc.data();
-    });
-
-    // 3. Validation: At least one creature/hero
-    let hasCreature = false;
-    let totalAttack = 0;
-    let totalDefense = 0;
-    let totalRarityBonus = 0;
-    const rarities: Record<string, number> = {};
-
-    const rarityBonuses: Record<string, number> = {
-      common: 1,
-      uncommon: 3,
-      rare: 6,
-      epic: 10,
-      legendary: 20,
-      mythic: 40
-    };
-
-    for (const cardId of deckCards) {
-      const card = cardDataMap[cardId];
-      if (!card) continue;
+    // 2. TRANSACTIONAL EXECUTION
+    const result = await adminDb.runTransaction(async (transaction) => {
+      // 2.1 Validate Ownership (Inside Transaction)
+      const playerCollRef = adminDb.collection('playerCollections').doc(userId);
+      const playerCollSnap = await transaction.get(playerCollRef);
       
-      if (card.type === 'character' || card.type === 'creature' || card.type === 'hero' || !card.type) {
-        hasCreature = true;
-      }
-
-      totalAttack += (card.attack || 0);
-      totalDefense += (card.defense || 0);
-      
-      const rarity = (card.rarity || 'common').toLowerCase();
-      totalRarityBonus += (rarityBonuses[rarity] || 0);
-      
-      rarities[rarity] = (rarities[rarity] || 0) + 1;
-    }
-
-    if (!hasCreature) {
-      return NextResponse.json({ error: 'Deck must have at least one character/hero card.' }, { status: 400 });
-    }
-
-    const powerScore = totalAttack + totalDefense + totalRarityBonus;
-    
-    // Find primary rarity
-    let primaryRarity = 'common';
-    let maxCount = 0;
-    for (const [r, count] of Object.entries(rarities)) {
-      if (count > maxCount) {
-        maxCount = count;
-        primaryRarity = r;
-      }
-    }
-
-    const batch = adminDb.batch();
-
-    // If this deck is active, deactivate others
-    if (isActive) {
-      const activeDecks = await adminDb.collection('decks')
-        .where('userId', '==', userId)
-        .where('isActive', '==', true)
-        .get();
-      
-      activeDecks.forEach(doc => {
-        batch.update(doc.ref, { isActive: false, updatedAt: new Date().toISOString() });
+      if (!playerCollSnap.exists) throw new Error("COLLECTION_NOT_FOUND");
+      const ownedCards = playerCollSnap.data()?.cards || [];
+      const ownedMap: Record<string, number> = {};
+      ownedCards.forEach((c: any) => {
+        ownedMap[c.cardId] = (ownedMap[c.cardId] || 0) + c.count;
       });
-    }
 
-    const deckRef = deckId ? adminDb.collection('decks').doc(deckId) : adminDb.collection('decks').doc();
-    const finalDeckId = deckRef.id;
+      const deckMap: Record<string, number> = {};
+      for (const cardId of deckCards) {
+        deckMap[cardId] = (deckMap[cardId] || 0) + 1;
+      }
 
-    const deckData = {
-      deckId: finalDeckId,
-      userId,
-      name,
-      cards: deckCards,
-      totalCards: deckCards.length,
-      primaryRarity,
-      powerScore,
-      isActive: !!isActive,
-      updatedAt: new Date().toISOString(),
-      ...(deckId ? {} : { createdAt: new Date().toISOString() })
-    };
+      for (const [cardId, count] of Object.entries(deckMap)) {
+        if ((ownedMap[cardId] || 0) < count) {
+          throw new Error(`INSUFFICIENT_COPIES: You do not own enough of ${cardId}.`);
+        }
+      }
 
-    batch.set(deckRef, deckData, { merge: true });
+      // 2.2 Fetch Card Data for Stats (Inside Transaction)
+      // Note: We'll do this outside if too many, but 10 is fine.
+      const cardDataMap: Record<string, any> = {};
+      for (const cardId of Object.keys(deckMap)) {
+        const cSnap = await transaction.get(adminDb.collection('cards').doc(cardId));
+        if (cSnap.exists) cardDataMap[cardId] = cSnap.data();
+      }
 
-    await batch.commit();
+      // 2.3 Calculate Power Score
+      let totalAttack = 0;
+      let totalDefense = 0;
+      let totalRarityBonus = 0;
+      const rarities: Record<string, number> = {};
+      const rarityBonuses: Record<string, number> = { common: 1, uncommon: 3, rare: 6, epic: 10, legendary: 20, mythic: 40 };
 
-    return NextResponse.json({ success: true, deckId: finalDeckId, powerScore });
+      for (const cardId of deckCards) {
+        const card = cardDataMap[cardId] || {};
+        totalAttack += (card.attack || 0);
+        totalDefense += (card.defense || 0);
+        const rarity = (card.rarity || 'common').toLowerCase();
+        totalRarityBonus += (rarityBonuses[rarity] || 0);
+        rarities[rarity] = (rarities[rarity] || 0) + 1;
+      }
+
+      const powerScore = totalAttack + totalDefense + totalRarityBonus;
+      let primaryRarity = 'common';
+      let maxCount = 0;
+      for (const [r, count] of Object.entries(rarities)) {
+        if (count > maxCount) {
+          maxCount = count;
+          primaryRarity = r;
+        }
+      }
+
+      // 2.4 Atomic Deactivation of other decks
+      if (isActive) {
+        const activeDecksQuery = adminDb.collection('decks')
+          .where('userId', '==', userId)
+          .where('isActive', '==', true);
+        const activeDecksSnap = await transaction.get(activeDecksQuery);
+        activeDecksSnap.forEach(doc => {
+          if (doc.id !== deckId) {
+            transaction.update(doc.ref, { isActive: false, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+          }
+        });
+      }
+
+      const deckRef = deckId ? adminDb.collection('decks').doc(deckId) : adminDb.collection('decks').doc();
+      const finalDeckId = deckRef.id;
+
+      const deckData = {
+        deckId: finalDeckId,
+        userId,
+        name,
+        cards: deckCards,
+        totalCards: deckCards.length,
+        primaryRarity,
+        powerScore,
+        isActive: !!isActive,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp() // set on every save or use merge
+      };
+
+      transaction.set(deckRef, deckData, { merge: true });
+
+      return { success: true, deckId: finalDeckId, powerScore };
+    });
+
+    await logEvent('deck_save', `User ${userId} saved deck ${result.deckId}`, { userId });
+    return NextResponse.json(result);
 
   } catch (error: any) {
-    console.error('DECK SAVE ERROR:', error);
+    console.error('CRITICAL_DECK_SAVE_ERROR:', error);
+    await logError(`Deck Save Failed: ${error.message}`, error, { userId });
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

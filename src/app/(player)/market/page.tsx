@@ -3,15 +3,17 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { collection, query, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ShoppingCart, Search, Filter, Zap, LayoutGrid, List as ListIcon, Info, X, Sword, Shield, Library } from 'lucide-react';
+import { ShoppingCart, Search, Filter, Zap, LayoutGrid, List as ListIcon, Info, X, Sword, Shield, Library, Lock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useProject } from '@/components/providers/ProjectProvider';
 import { toast } from 'react-hot-toast';
 import { ValueIndexPanel } from '@/components/ui/ValueIndexPanel';
 
 export default function MarketPage() {
+  const { projectId } = useProject();
   const [view, setView] = useState('grid');
   const [listings, setListings] = useState<any[]>([]);
   const [valueIndices, setValueIndices] = useState<Record<string, any>>({});
@@ -24,24 +26,28 @@ export default function MarketPage() {
   const [selectedListing, setSelectedListing] = useState<any | null>(null);
   const [cardDetails, setCardDetails] = useState<Record<string, any>>({});
   const [isBuying, setIsBuying] = useState(false);
-
+  const [status, setStatus] = useState<any>(null);
   const { user } = useAuth();
 
-  const fetchListings = async () => {
-    try {
-      const q = query(collection(db, 'marketListings'));
-      const snapshot = await getDocs(q);
-      
-      const activeListings = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter((l: any) => l.status === 'active');
+  useEffect(() => {
+    if (!projectId) return;
+    setLoading(true);
+
+    // 1. Listen to Listings for this project
+    const q = query(
+      collection(db, 'marketListings'), 
+      where('projectId', '==', projectId),
+      where('status', '==', 'active')
+    );
+    
+    const unsubListings = onSnapshot(q, async (snapshot) => {
+      const activeListings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
       
       setListings(activeListings);
 
       // Fetch indices and card details for active listings
       const indicesMap: Record<string, any> = {};
       const detailsMap: Record<string, any> = {};
-
       const uniqueCardIds = Array.from(new Set(activeListings.map(l => l.cardId)));
       
       await Promise.all(uniqueCardIds.map(async (cid) => {
@@ -56,17 +62,18 @@ export default function MarketPage() {
 
       setValueIndices(indicesMap);
       setCardDetails(detailsMap);
-    } catch (error) {
-      console.error("Error fetching market:", error);
-    } finally {
       setLoading(false);
-    }
-  };
+    });
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchListings();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // 2. Listen to System Status
+    const unsubStatus = onSnapshot(doc(db, 'systemStatus', 'global'), (snap) => {
+      if (snap.exists()) setStatus(snap.data());
+    });
+
+    return () => {
+      unsubListings();
+      unsubStatus();
+    };
   }, []);
 
   const filteredListings = useMemo(() => {
@@ -110,7 +117,6 @@ export default function MarketPage() {
       
       toast.success('Card added to your collection.');
       setSelectedListing(null);
-      await fetchListings();
     } catch (e: any) {
       toast.error(e.message || 'Purchase failed');
     } finally {
@@ -148,6 +154,23 @@ export default function MarketPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 pt-10 pb-[100px]">
+      {status?.tradingPaused && (
+        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center justify-between gap-4 animate-pulse">
+           <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500">
+                 <Lock size={20} />
+              </div>
+              <div>
+                 <p className="text-sm font-black text-white uppercase font-space">Market Trading Paused</p>
+                 <p className="text-xs text-zinc-400">{status.reason || 'The marketplace is currently offline for calibration. Please check back soon.'}</p>
+              </div>
+           </div>
+           <div className="hidden md:block px-4 py-1 rounded-full border border-red-500/30 text-red-500 text-[10px] font-black uppercase tracking-widest">
+              Emergency Protocol Active
+           </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary border border-secondary/20 shadow-[0_0_15px_rgba(20,241,149,0.2)]">

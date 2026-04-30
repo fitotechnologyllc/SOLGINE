@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import { ProjectSelector } from './ProjectSelector';
 
 const studioItems = [
   { href: '/studio/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -29,7 +30,7 @@ export const Sidebar = () => {
 
   return (
     <aside className="w-64 h-screen glass border-r border-white/10 flex flex-col p-6 sticky top-0">
-      <div className="flex items-center gap-3 mb-10">
+      <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center neon-glow-purple">
           <Cpu className="text-white" size={24} />
         </div>
@@ -39,7 +40,9 @@ export const Sidebar = () => {
         </div>
       </div>
 
-      <nav className="flex-1 flex flex-col gap-2">
+      <ProjectSelector />
+
+      <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
         {studioItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;

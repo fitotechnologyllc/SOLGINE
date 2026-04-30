@@ -27,6 +27,7 @@ export const BottomNav = () => {
           <Link
             key={item.href}
             href={item.href}
+            id={`nav-${item.label.toLowerCase()}`}
             className={cn(
               "flex flex-col items-center justify-center gap-1 transition-all duration-300 relative px-3 py-2 rounded-2xl group",
               isActive ? "text-primary scale-105" : "text-zinc-500 hover:text-zinc-300"

@@ -12,6 +12,7 @@ import { getCurrentLevelProgress } from "@/lib/rewards";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { SolgineCard } from "@/components/cards/SolgineCard";
+import { MissionsPanel } from "@/components/growth/MissionsPanel";
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -380,6 +381,8 @@ export default function Dashboard() {
 
         {/* Neural Store & Progression */}
         <div className="space-y-8">
+           <MissionsPanel />
+           
            <div className="space-y-6">
               <h2 className="text-xl font-black font-space text-white uppercase tracking-wider flex items-center gap-3">
                 <Zap size={20} className="text-primary" />

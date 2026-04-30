@@ -3,8 +3,11 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { SolanaProvider } from "@/components/providers/SolanaProvider";
+import { ProjectProvider } from "@/components/providers/ProjectProvider";
+import { OnboardingGuide } from "@/components/growth/OnboardingGuide";
 import { FirebaseConnectionCheck } from "@/components/providers/FirebaseConnectionCheck";
 import { Toaster } from "react-hot-toast";
+import { Suspense } from "react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -34,15 +37,20 @@ export default function RootLayout({
       <body className={`${inter.variable} ${spaceGrotesk.variable} antialiased`}>
         <AuthProvider>
           <SolanaProvider>
-            {children}
-            <FirebaseConnectionCheck />
-            <Toaster position="bottom-right" toastOptions={{
-              style: {
-                background: '#131313',
-                color: '#fff',
-                border: '1px solid rgba(255,255,255,0.1)',
-              },
-            }} />
+            <Suspense fallback={null}>
+              <ProjectProvider>
+                {children}
+                <FirebaseConnectionCheck />
+                <Toaster position="bottom-right" toastOptions={{
+                  style: {
+                    background: '#131313',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  },
+                }} />
+                <OnboardingGuide />
+              </ProjectProvider>
+            </Suspense>
           </SolanaProvider>
         </AuthProvider>
       </body>

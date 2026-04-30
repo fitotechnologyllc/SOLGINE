@@ -370,6 +370,17 @@ export default function PackRevealPage() {
               >
                 View Collection <ChevronRight size={18} />
               </button>
+              <button 
+                onClick={() => {
+                  const highRarity = cards.some(c => ['legendary', 'mythic'].includes(c.rarity));
+                  const text = `Just pulled ${cards.length} cards on @SOLGINE! ${highRarity ? "🚀 HOLY SH*T A LEGENDARY!" : "Check out my new collection."} #SOLGINE #Solana #TCG`;
+                  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+                  window.open(url, '_blank');
+                }}
+                className="flex-1 md:flex-none px-8 py-4 rounded-xl bg-[#1DA1F2] text-white font-black font-space text-sm tracking-widest uppercase hover:scale-105 transition-all flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined !text-[20px]">share</span> Share_Pull
+              </button>
             </div>
           </motion.div>
         )}

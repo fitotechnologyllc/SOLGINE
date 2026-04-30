@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/navigation/BottomNav";
+import { PlayerHeader } from "@/components/navigation/PlayerHeader";
 
 export default function PlayerLayout({
   children,
@@ -6,7 +7,8 @@ export default function PlayerLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen pb-32 bg-background">
+    <div className="min-h-screen pt-20 pb-32 bg-background">
+      <PlayerHeader />
       {children}
       <BottomNav />
     </div>

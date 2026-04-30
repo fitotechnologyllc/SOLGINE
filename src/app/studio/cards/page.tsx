@@ -1,250 +1,196 @@
 'use client';
 
-import { useState } from 'react';
-import { 
-  Plus, 
-  Upload, 
-  Layers, 
-  Shield, 
-  Zap, 
-  Sword, 
-  Save,
-  Cpu,
-  RefreshCcw,
-  Sparkles
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { Plus, Layers, Image as ImageIcon, Shield, Zap, X, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-export default function CardCreator() {
-  const [cardData, setCardData] = useState({
-    name: 'CORE SENTINEL',
-    description: 'A guardian of the digital frontier.',
+export default function StudioCardsPage() {
+  const { user } = useAuth();
+  const { projectId, activeProject } = useProject();
+  const [cards, setCards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    name: '',
     rarity: 'Common',
-    type: 'Unit',
-    atk: 10,
-    def: 10,
-    abilityName: 'PROTOCOL ALPHA',
-    abilityDesc: 'Deals 5 damage to adjacent enemies.',
-    image: null as string | null
+    supplyLimit: '',
+    imageUrl: ''
   });
 
-  const [isGenerating, setIsGenerating] = useState(false);
+  useEffect(() => {
+    if (!projectId) return;
+    
+    const q = query(collection(db, 'cards'), where('projectId', '==', projectId));
+    const unsub = onSnapshot(q, (snap) => {
+      setCards(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setCardData({ ...cardData, image: reader.result as string });
-      reader.readAsDataURL(file);
+    return () => unsub();
+  }, [projectId]);
+
+  const handleCreateCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    const loadingToast = toast.loading('Creating card...');
+    try {
+      const res = await fetch('/api/studio/create-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, projectId, ownerUid: user.uid })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      toast.success('Card Created!', { id: loadingToast });
+      setIsCreating(false);
+      setFormData({ name: '', rarity: 'Common', supplyLimit: '', imageUrl: '' });
+    } catch (error: any) {
+      toast.error(error.message, { id: loadingToast });
     }
   };
 
-  const handleAISuggest = async () => {
-    setIsGenerating(true);
-    // Simulate AI generation from OpenRouter
-    setTimeout(() => {
-      setCardData({
-        ...cardData,
-        name: 'VORTEX REAPER',
-        abilityName: 'GRAVITY WELL',
-        abilityDesc: 'Pull all enemies to the front line and stun them for 1 turn.',
-        atk: 15,
-        def: 8
-      });
-      setIsGenerating(false);
-      toast.success('AI Suggestion Applied!');
-    }, 1500);
-  };
-
   return (
-    <div className="p-10 max-w-6xl mx-auto">
-      <header className="flex justify-between items-center mb-10">
+    <div className="p-10 space-y-10">
+      <header className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-black font-space text-white uppercase tracking-tighter">Card Engine</h1>
-          <p className="text-primary font-space font-bold tracking-[0.3em] uppercase text-xs">Forging digital entities</p>
+          <p className="text-primary font-space font-bold tracking-[0.3em] uppercase text-xs mb-2">Asset Management</p>
+          <h1 className="text-4xl font-black font-space text-white uppercase tracking-tighter">PROJECT_CARDS</h1>
+          <p className="text-zinc-500 text-xs font-space uppercase tracking-widest mt-2">{activeProject?.name} • {cards.length} Total Assets</p>
         </div>
-        <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-6 py-3 rounded-xl glass text-zinc-400 font-bold font-space hover:text-white transition-all">
-            <RefreshCcw size={18} />
-            RESET
-          </button>
-          <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-gradient text-white font-bold font-space shadow-lg hover:scale-105 transition-all">
-            <Save size={18} />
-            COMMIT TO CHAIN
-          </button>
-        </div>
+        <button 
+          onClick={() => setIsCreating(true)}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-gradient text-white font-black font-space shadow-lg hover:scale-105 transition-all uppercase tracking-widest text-xs"
+        >
+          <Plus size={18} />
+          Create_New_Card
+        </button>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Editor Form */}
-        <section className="space-y-8">
-          <div className="glass-card p-8 space-y-6">
-            <div className="space-y-4">
-              <label className="text-[10px] font-black font-space text-zinc-500 uppercase tracking-widest">Base Identity</label>
-              <div className="grid grid-cols-2 gap-4">
-                <input 
-                  type="text" 
-                  placeholder="Card Name"
-                  className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-space focus:border-primary outline-none transition-all"
-                  value={cardData.name}
-                  onChange={(e) => setCardData({ ...cardData, name: e.target.value })}
-                />
-                <select 
-                  className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-space focus:border-primary outline-none transition-all"
-                  value={cardData.rarity}
-                  onChange={(e) => setCardData({ ...cardData, rarity: e.target.value })}
-                >
-                  <option>Common</option>
-                  <option>Rare</option>
-                  <option>Epic</option>
-                  <option>Legendary</option>
-                </select>
-              </div>
-              <textarea 
-                placeholder="Core Description"
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white font-space h-24 focus:border-primary outline-none transition-all resize-none"
-                value={cardData.description}
-                onChange={(e) => setCardData({ ...cardData, description: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-black font-space text-zinc-500 uppercase tracking-widest">Combat Stats</label>
-                <button 
-                  onClick={handleAISuggest}
-                  disabled={isGenerating}
-                  className="text-primary text-[10px] font-black font-space uppercase tracking-widest flex items-center gap-2 hover:underline disabled:opacity-50"
-                >
-                  <Sparkles size={12} />
-                  AI Rebalance
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="relative">
-                  <Sword className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                  <input 
-                    type="number" 
-                    placeholder="ATK"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 pl-12 text-white font-space focus:border-primary outline-none transition-all"
-                    value={cardData.atk}
-                    onChange={(e) => setCardData({ ...cardData, atk: parseInt(e.target.value) || 0 })}
-                  />
+      {/* Card Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6">
+           {[1,2,3,4,5,6].map(i => <div key={i} className="aspect-[3/4] rounded-2xl bg-white/5 animate-pulse" />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6">
+           {cards.map((card) => (
+             <div key={card.id} className="glass-card group hover:border-primary/30 transition-all overflow-hidden flex flex-col">
+                <div className="aspect-[3/4] bg-white/5 relative overflow-hidden">
+                   {card.imageUrl ? (
+                     <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                   ) : (
+                     <div className="w-full h-full flex items-center justify-center text-zinc-800">
+                        <ImageIcon size={48} />
+                     </div>
+                   )}
+                   <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[8px] font-black uppercase text-white tracking-widest">
+                      {card.rarity}
+                   </div>
                 </div>
-                <div className="relative">
-                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                  <input 
-                    type="number" 
-                    placeholder="DEF"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 pl-12 text-white font-space focus:border-primary outline-none transition-all"
-                    value={cardData.def}
-                    onChange={(e) => setCardData({ ...cardData, def: parseInt(e.target.value) || 0 })}
-                  />
+                <div className="p-4 space-y-1">
+                   <h4 className="text-sm font-black font-space text-white uppercase truncate">{card.name}</h4>
+                   <div className="flex justify-between items-center text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
+                      <span>Supply: {card.supplyLimit || '∞'}</span>
+                      <span className="text-primary">{card.mintedCount || 0} Minted</span>
+                   </div>
                 </div>
-              </div>
-            </div>
+             </div>
+           ))}
+           
+           {cards.length === 0 && (
+             <div className="col-span-full py-20 text-center border-2 border-white/5 border-dashed rounded-3xl">
+                <Layers size={48} className="mx-auto text-zinc-800 mb-4" />
+                <p className="text-zinc-600 font-black font-space uppercase tracking-widest">No cards found in this project</p>
+                <button onClick={() => setIsCreating(true)} className="mt-4 text-primary text-xs font-black uppercase tracking-widest hover:underline">Start Designing Now</button>
+             </div>
+           )}
+        </div>
+      )}
 
-            <div className="space-y-4">
-              <label className="text-[10px] font-black font-space text-zinc-500 uppercase tracking-widest">Unique Ability</label>
-              <input 
-                type="text" 
-                placeholder="Ability Name"
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white font-space focus:border-primary outline-none transition-all"
-                value={cardData.abilityName}
-                onChange={(e) => setCardData({ ...cardData, abilityName: e.target.value })}
-              />
-              <textarea 
-                placeholder="Ability Mechanics"
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white font-space h-20 focus:border-primary outline-none transition-all resize-none text-sm"
-                value={cardData.abilityDesc}
-                onChange={(e) => setCardData({ ...cardData, abilityDesc: e.target.value })}
-              />
-            </div>
+      {/* Create Card Modal */}
+      {isCreating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+           <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setIsCreating(false)} />
+           <div className="relative w-full max-w-xl bg-[#0a0a0a] border border-white/10 rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+              <header className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                 <h3 className="text-xl font-black font-space text-white uppercase tracking-tighter">NEW_ASSET_ARCHITECT</h3>
+                 <button onClick={() => setIsCreating(false)} className="text-zinc-500 hover:text-white transition-colors">
+                    <X size={24} />
+                 </button>
+              </header>
 
-            <div className="space-y-4">
-              <label className="text-[10px] font-black font-space text-zinc-500 uppercase tracking-widest">Visual Asset</label>
-              <div 
-                className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-all cursor-pointer relative"
-                onClick={() => document.getElementById('card-upload')?.click()}
-              >
-                <Upload size={32} className="text-zinc-500" />
-                <p className="text-sm text-zinc-400 font-medium">Upload Card Artwork</p>
-                <p className="text-[10px] text-zinc-600 uppercase tracking-widest">PNG, JPG up to 10MB</p>
-                <input id="card-upload" type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
-              </div>
-            </div>
-          </div>
-        </section>
+              <form onSubmit={handleCreateCard} className="p-8 space-y-6">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-1">Card Name</label>
+                    <input 
+                      required
+                      type="text" 
+                      placeholder="e.g. Neon Samurai"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-space focus:outline-none focus:border-primary/50"
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                    />
+                 </div>
 
-        {/* Real-time Preview */}
-        <section className="flex flex-col items-center justify-start sticky top-10">
-          <div className="flex flex-col items-center gap-4 mb-6">
-             <h3 className="text-zinc-500 font-space font-bold tracking-[0.2em] uppercase text-[10px]">Holographic Preview</h3>
-             <div className="w-12 h-1 bg-primary/20 rounded-full"></div>
-          </div>
+                 <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-1">Rarity Class</label>
+                       <select 
+                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-space focus:outline-none focus:border-primary/50 appearance-none"
+                         value={formData.rarity}
+                         onChange={e => setFormData({...formData, rarity: e.target.value})}
+                       >
+                          <option>Common</option>
+                          <option>Uncommon</option>
+                          <option>Rare</option>
+                          <option>Epic</option>
+                          <option>Legendary</option>
+                          <option>Mythic</option>
+                       </select>
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-1">Supply Limit</label>
+                       <input 
+                         type="number" 
+                         placeholder="Leave blank for infinite"
+                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-space focus:outline-none focus:border-primary/50"
+                         value={formData.supplyLimit}
+                         onChange={e => setFormData({...formData, supplyLimit: e.target.value})}
+                       />
+                    </div>
+                 </div>
 
-          <div className={cn(
-            "w-[340px] h-[480px] rounded-[2.5rem] p-1 relative overflow-hidden transition-all duration-500",
-            cardData.rarity === 'Common' && "bg-zinc-600",
-            cardData.rarity === 'Rare' && "bg-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)]",
-            cardData.rarity === 'Epic' && "bg-purple-500 shadow-[0_0_40px_rgba(168,85,247,0.3)]",
-            cardData.rarity === 'Legendary' && "bg-amber-400 shadow-[0_0_60px_rgba(251,191,36,0.5)]"
-          )}>
-            <div className="w-full h-full rounded-[2.4rem] bg-[#0d0d0d] relative overflow-hidden flex flex-col p-6">
-              {/* Card Header */}
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-[10px] font-black font-space text-white/40 tracking-widest">NO. 001</span>
-                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                  <Zap size={14} className="text-primary" />
-                </div>
-              </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-1">Card Artwork URL</label>
+                    <input 
+                      required
+                      type="url" 
+                      placeholder="https://..."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-primary/50"
+                      value={formData.imageUrl}
+                      onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                    />
+                 </div>
 
-              {/* Card Image */}
-              <div className="w-full h-48 rounded-2xl bg-zinc-900 border border-white/5 relative overflow-hidden">
-                {cardData.image ? (
-                  <img src={cardData.image} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center opacity-20">
-                    <Layers size={48} className="text-white" />
-                    <span className="text-[8px] font-black mt-2 uppercase tracking-tighter">Awaiting Signal</span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-transparent to-transparent"></div>
-              </div>
-
-              {/* Card Details */}
-              <div className="mt-4 flex-1 flex flex-col">
-                <h2 className="text-2xl font-black font-space text-white leading-none mb-1">{cardData.name}</h2>
-                <p className="text-[8px] font-bold text-primary tracking-[0.2em] uppercase mb-4">{cardData.rarity}</p>
-                
-                <div className="space-y-4">
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                    <p className="text-[8px] font-black text-primary tracking-widest uppercase mb-1">{cardData.abilityName}</p>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
-                      {cardData.abilityDesc}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-auto flex justify-between items-center pt-4 border-t border-white/5">
-                  <div className="flex items-center gap-2">
-                    <Sword size={16} className="text-zinc-600" />
-                    <span className="text-xl font-black font-space text-white">{cardData.atk}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Shield size={16} className="text-zinc-600" />
-                    <span className="text-xl font-black font-space text-white">{cardData.def}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Holographic Overlays */}
-              <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,_rgba(255,255,255,0.05)_0%,_transparent_50%)] pointer-events-none"></div>
-            </div>
-          </div>
-        </section>
-      </div>
+                 <button 
+                   type="submit"
+                   className="w-full py-4 rounded-xl bg-white text-black font-black font-space uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-primary transition-all mt-4 shadow-xl"
+                 >
+                   INITIALIZE_ASSET
+                   <ArrowRight size={18} />
+                 </button>
+              </form>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

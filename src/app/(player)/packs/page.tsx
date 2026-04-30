@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, query, onSnapshot, getDocs, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Package, Zap, Sparkles, ChevronRight, RefreshCw, Layers, AlertCircle } from 'lucide-react';
+import { Package, Zap, Sparkles, ChevronRight, RefreshCw, Layers, AlertCircle, TrendingUp, TrendingDown, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -27,6 +27,7 @@ export default function PacksPage() {
   const { connected } = useWallet();
   const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
+  const [playerStats, setPlayerStats] = useState<any>(null);
 
   const [mounted, setMounted] = useState(false);
 
@@ -34,7 +35,6 @@ export default function PacksPage() {
     setMounted(true);
     let isMounted = true;
     
-    // Initial offline check
     if (typeof window !== 'undefined' && !navigator.onLine) {
       setError("Connection is slow — loading local preview packs.");
       setPacks(FALLBACK_PACKS);
@@ -42,8 +42,6 @@ export default function PacksPage() {
     }
 
     const q = query(collection(db, 'boosterPacks'));
-    
-    console.log("Setting up Firestore onSnapshot listener for packs...");
     
     const unsubscribe = onSnapshot(q, 
       (snap) => {
@@ -68,9 +66,14 @@ export default function PacksPage() {
     );
 
     let userUnsub = () => {};
+    let statsUnsub = () => {};
+
     if (user) {
       userUnsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
         if (isMounted && docSnap.exists()) setUserData(docSnap.data());
+      });
+      statsUnsub = onSnapshot(doc(db, 'playerStats', user.uid), (docSnap) => {
+        if (isMounted && docSnap.exists()) setPlayerStats(docSnap.data());
       });
     }
 
@@ -78,6 +81,7 @@ export default function PacksPage() {
       isMounted = false;
       unsubscribe();
       userUnsub();
+      statsUnsub();
     };
   }, [user]);
 
@@ -116,22 +120,8 @@ export default function PacksPage() {
 
     } catch (error: any) {
       console.warn("API Failed:", error);
-      
-      if (process.env.NODE_ENV === 'development' && (!navigator.onLine || error.message.includes('fetch'))) {
-         toast.error('Preview mode — cards may not sync until Firestore reconnects.', { duration: 5000 });
-         // Create local fallback cards for preview
-         const fallbackCards = [
-           { id: 'c_pulse_reaper', name: 'Pulse Reaper', rarity: 'common', attack: 10, defense: 5, estimatedValue: 2 },
-           { id: 'c_iron_phalanx', name: 'Iron Phalanx', rarity: 'common', attack: 5, defense: 12, estimatedValue: 2 },
-           { id: 'c_nova_guardian', name: 'Nova Guardian', rarity: 'rare', attack: 25, defense: 20, estimatedValue: 20 }
-         ];
-         sessionStorage.setItem('solgine_pack_reveal', JSON.stringify(fallbackCards));
-         router.push('/packs/reveal');
-      } else {
-         // Temporarily show API error message in UI for debugging
-         toast.error(`Error: ${error.message}`, { duration: 8000 });
-         setOpening(false);
-      }
+      toast.error(error.message || 'Purchase failed');
+      setOpening(false);
     }
   };
 
@@ -142,6 +132,10 @@ export default function PacksPage() {
       .map(([rarity, chance]) => `${rarity.charAt(0).toUpperCase() + rarity.slice(1)}: ${chance}%`)
       .join(' • ');
   };
+
+  const today = new Date().toISOString().split('T')[0];
+  const dailyOpens = playerStats?.lastPackOpenDate === today ? (playerStats?.dailyPackOpens || 0) : 0;
+  const priceMultiplier = dailyOpens >= 10 ? 1.25 : (dailyOpens >= 5 ? 1.1 : 1.0);
 
   return (
     <div className="p-6 max-w-[1200px] mx-auto space-y-8 pt-10 pb-[120px]">
@@ -156,27 +150,38 @@ export default function PacksPage() {
           </div>
         </div>
 
-        {error && (
-          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 px-4 py-2 rounded-xl text-xs font-bold tracking-wider uppercase">
-            <AlertCircle size={14} />
-            {error}
-          </div>
-        )}
-      </div>
-
-      {mounted && !connected && (
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 md:p-6 rounded-2xl bg-[#111111]/80 backdrop-blur-md border border-white/5 shadow-lg">
-          <div className="flex items-center gap-3 text-zinc-400">
-            <Zap size={20} className="text-secondary" />
-            <p className="text-sm font-medium">
-              <strong className="text-white">Wallet optional</strong> — connect only when you&apos;re ready to mint or trade on-chain.
-            </p>
-          </div>
-          <div className="wallet-packs-btn">
-            <WalletMultiButton className="!bg-white/5 hover:!bg-white/10 !text-white !h-10 !rounded-xl !text-xs !font-bold !font-space !uppercase !tracking-widest !border !border-white/10 transition-all" />
-          </div>
+        <div className="flex flex-col items-end gap-2">
+           <div className="flex items-center gap-3 bg-black/40 border border-white/5 px-4 py-2 rounded-xl">
+              <div className="text-right">
+                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Daily Openings</p>
+                 <p className="text-sm font-black text-white">{dailyOpens} / 20</p>
+              </div>
+              <div className="w-10 h-10 rounded-full border-2 border-white/5 flex items-center justify-center relative">
+                 <svg className="w-full h-full -rotate-90">
+                    <circle 
+                      cx="20" cy="20" r="18" 
+                      fill="none" stroke="currentColor" strokeWidth="2" 
+                      className="text-white/5"
+                    />
+                    <circle 
+                      cx="20" cy="20" r="18" 
+                      fill="none" stroke="currentColor" strokeWidth="2" 
+                      strokeDasharray={113}
+                      strokeDashoffset={113 - (113 * Math.min(dailyOpens, 20) / 20)}
+                      className="text-secondary transition-all duration-500"
+                    />
+                 </svg>
+                 <Package size={12} className="absolute text-secondary" />
+              </div>
+           </div>
+           {priceMultiplier > 1 && (
+             <div className="flex items-center gap-2 text-[10px] font-black text-orange-400 uppercase bg-orange-400/10 px-2 py-1 rounded-lg border border-orange-400/20">
+                <AlertCircle size={10} />
+                Multiplier active: x{priceMultiplier}
+             </div>
+           )}
         </div>
-      )}
+      </div>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -195,12 +200,25 @@ export default function PacksPage() {
           {packs.map((pack) => {
             const creditKey = pack.id.replace('pack_', '') + 'Credits';
             const credits = userData?.[creditKey] || 0;
+            const currentPrice = pack.dynamicPrice || pack.price;
+            const finalPrice = Math.round(currentPrice * priceMultiplier);
+            const isRising = pack.priceTrend === 'rising';
+            const isFalling = pack.priceTrend === 'falling';
             
             return (
               <div key={pack.id} className="bg-[#0a0a0a]/80 backdrop-blur-xl p-8 rounded-[24px] flex flex-col gap-6 relative overflow-hidden group border border-white/5 hover:border-primary/40 hover:shadow-[0_8px_30px_rgba(168,85,247,0.15)] transition-all duration-300">
+                {pack.dynamicPrice && (
+                  <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-1">
+                    <div className="bg-black/60 backdrop-blur-md border border-white/10 px-2 py-1 rounded-lg flex items-center gap-1.5 shadow-xl">
+                      {isRising ? <TrendingUp size={12} className="text-red-400" /> : isFalling ? <TrendingDown size={12} className="text-secondary" /> : <RefreshCw size={12} className="text-zinc-500" />}
+                      <span className="text-[9px] font-black font-space text-white uppercase tracking-widest">Market Adjusted</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-start relative z-10">
-                  <div>
-                    <h3 className="text-2xl font-black font-space text-white drop-shadow-md">{pack.name}</h3>
+                  <div className="max-w-[70%]">
+                    <h3 className="text-2xl font-black font-space text-white drop-shadow-md leading-tight">{pack.name}</h3>
                     <p className="text-zinc-400 text-sm font-medium mt-1">{pack.cardsPerPack} Digital Assets</p>
                   </div>
                   {credits > 0 && (
@@ -211,16 +229,31 @@ export default function PacksPage() {
                 </div>
 
                 <div className="space-y-2 relative z-10 flex-1">
-                   <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Drop Rates</p>
+                   <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Drop Rates</p>
+                      <Info size={12} className="text-zinc-700 cursor-help" />
+                   </div>
                    <p className="text-[11px] font-mono text-zinc-400 leading-relaxed bg-[#111] p-3 rounded-xl border border-white/5">
                      {formatOdds(pack.rarityOdds)}
                    </p>
                 </div>
 
-                <div className="flex items-center gap-2 mt-auto relative z-10">
-                   <Zap size={18} className="text-secondary fill-secondary" />
-                   <span className="text-3xl font-black font-space text-white">{pack.price}</span>
-                   <span className="text-zinc-500 text-xs font-bold font-space ml-1 uppercase">SOLG</span>
+                <div className="flex flex-col gap-1 mt-auto relative z-10">
+                   <div className="flex items-center gap-2">
+                      <Zap size={18} className="text-secondary fill-secondary" />
+                      <span className={cn(
+                        "text-3xl font-black font-space",
+                        priceMultiplier > 1 ? "text-orange-400" : "text-white"
+                      )}>
+                        {finalPrice}
+                      </span>
+                      <span className="text-zinc-500 text-xs font-bold font-space ml-1 uppercase">SOLG</span>
+                   </div>
+                   {priceMultiplier > 1 && (
+                     <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                       Base: {currentPrice} SOLG + Demand Surge
+                     </p>
+                   )}
                 </div>
 
                 <button 
@@ -233,7 +266,7 @@ export default function PacksPage() {
                       : "bg-white hover:bg-zinc-200"
                   )}
                 >
-                  {credits > 0 ? "USE PACK CREDIT" : "OPEN WITH SOLG"}
+                  {opening ? "PROCESSING..." : (credits > 0 ? "USE PACK CREDIT" : "OPEN WITH SOLG")}
                 </button>
 
                 <Package size={160} className="absolute -bottom-10 -right-10 text-white/5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 z-0" />
@@ -242,14 +275,7 @@ export default function PacksPage() {
           })}
         </div>
       )}
-
-      {/* REVEAL OVERLAY MOVED TO /packs/reveal */}
-
-      <style jsx global>{`
-        .perspective-1000 { perspective: 1000px; }
-        .preserve-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-      `}</style>
     </div>
   );
 }
+
