@@ -9,11 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@firebase/app": "^0.14.11",
-    "@firebase/auth": "^1.13.0",
-    "@firebase/firestore": "^4.14.0",
-    "@firebase/functions": "^0.13.3",
-    "@firebase/storage": "^0.14.2",
+    "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+    "@metaplex-foundation/umi": "^1.5.1",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.5.1",
+    "@metaplex-foundation/umi-signer-wallet-adapters": "^1.5.1",
+    "@solana/spl-token": "^0.4.14",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react": "^0.15.39",
     "@solana/wallet-adapter-react-ui": "^0.9.39",

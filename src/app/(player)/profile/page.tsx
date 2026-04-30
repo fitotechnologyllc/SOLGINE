@@ -7,10 +7,26 @@ import { User, Shield, Zap, Wallet, LogOut, Settings, Bell, ExternalLink } from 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { getCurrentLevelProgress } from "@/lib/rewards";
+import { Trophy, Swords, Activity, Target } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const { connected, publicKey } = useWallet();
+  const [userData, setUserData] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      getDoc(doc(db, 'users', user.uid)).then(snap => {
+        if (snap.exists()) setUserData(snap.data());
+      });
+    }
+  }, [user]);
+
+  const progress = userData ? getCurrentLevelProgress(userData.xp || 0) : null;
 
   if (loading) return (
     <div className="p-6 max-w-4xl mx-auto space-y-10 pt-10">
@@ -111,6 +127,47 @@ export default function ProfilePage() {
          </div>
       </div>
 
+      {/* Battle Statistics */}
+      <div className="glass-card p-8 space-y-8 overflow-hidden relative">
+         <div className="absolute top-0 right-0 p-8 opacity-5">
+            <Swords size={120} />
+         </div>
+
+         <div className="flex justify-between items-center relative z-10">
+            <h3 className="text-xl font-black font-space text-white flex items-center gap-2">
+               <Activity size={20} className="text-primary" />
+               COMBAT_RECORD_V1
+            </h3>
+            {progress && (
+              <div className="px-4 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-black font-space uppercase tracking-widest">
+                 Level {progress.level}
+              </div>
+            )}
+         </div>
+
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
+            <StatBox icon={Swords} label="Battles Played" value={userData?.battlesPlayed || 0} />
+            <StatBox icon={Trophy} label="Battles Won" value={userData?.battlesWon || 0} color="text-secondary" />
+            <StatBox icon={Target} label="Win Rate" value={userData?.battlesPlayed ? `${Math.round((userData.battlesWon / userData.battlesPlayed) * 100)}%` : '0%'} color="text-blue-400" />
+            <StatBox icon={Zap} label="Win Streak" value={userData?.winStreak || 0} color="text-amber-400" />
+         </div>
+
+         {progress && (
+           <div className="space-y-3 pt-4 border-t border-white/5 relative z-10">
+              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                 <span className="text-zinc-500">Experience Points</span>
+                 <span className="text-white">{progress.currentXp} / {progress.neededXp} XP</span>
+              </div>
+              <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 p-0.5">
+                 <div 
+                   className="h-full bg-primary rounded-full shadow-[0_0_15px_rgba(153,69,255,0.4)]" 
+                   style={{ width: `${progress.percentage}%` }}
+                 />
+              </div>
+           </div>
+         )}
+      </div>
+
       <div className="glass-card p-8">
          <h3 className="text-lg font-black font-space text-white mb-6 uppercase tracking-wider">Interface Settings</h3>
          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -135,6 +192,18 @@ export default function ProfilePage() {
           justify-content: center !important;
         }
       `}</style>
+    </div>
+  );
+}
+
+function StatBox({ icon: Icon, label, value, color = "text-white" }: any) {
+  return (
+    <div className="space-y-1">
+       <div className="flex items-center gap-2 text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+          <Icon size={12} />
+          {label}
+       </div>
+       <div className={cn("text-2xl font-black font-space", color)}>{value}</div>
     </div>
   );
 }

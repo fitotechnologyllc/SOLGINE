@@ -1,21 +1,24 @@
 import { NextResponse } from 'next/server';
-import { doc, getDoc, collection, writeBatch, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb, admin } from '@/lib/firebase-admin';
 
 export async function POST(req: Request) {
   try {
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
+    }
+
     const { buyerId, listingId } = await req.json();
 
     if (!buyerId || !listingId) {
       return NextResponse.json({ error: 'Missing buyerId or listingId' }, { status: 400 });
     }
 
-    const listingRef = doc(db, 'marketListings', listingId);
-    const listingSnap = await getDoc(listingRef);
-    if (!listingSnap.exists()) {
+    const listingRef = adminDb.collection('marketListings').doc(listingId);
+    const listingSnap = await listingRef.get();
+    if (!listingSnap.exists) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
     }
-    const listingData = listingSnap.data();
+    const listingData = listingSnap.data()!;
 
     if (listingData.status !== 'active') {
       return NextResponse.json({ error: 'Listing is not active' }, { status: 400 });
@@ -25,21 +28,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Cannot buy your own listing' }, { status: 400 });
     }
 
-    const batch = writeBatch(db);
+    const batch = adminDb.batch();
 
     // 1. Mark listing as sold
-    const soldAt = new Date().toISOString();
     batch.update(listingRef, {
       status: 'sold',
-      soldAt,
+      soldAt: admin.firestore.FieldValue.serverTimestamp(),
       buyerUid: buyerId
     });
 
     // 2. Decrement seller listedCount
-    const sellerCollRef = doc(db, 'playerCollections', listingData.sellerUid);
-    const sellerCollSnap = await getDoc(sellerCollRef);
-    if (sellerCollSnap.exists()) {
-      const cards = sellerCollSnap.data().cards || [];
+    const sellerCollRef = adminDb.collection('playerCollections').doc(listingData.sellerUid);
+    const sellerCollSnap = await sellerCollRef.get();
+    if (sellerCollSnap.exists) {
+      const cards = sellerCollSnap.data()?.cards || [];
       const cardIndex = cards.findIndex((c: any) => c.cardId === listingData.cardId);
       if (cardIndex !== -1) {
         cards[cardIndex].listedCount = Math.max((cards[cardIndex].listedCount || 0) - 1, 0);
@@ -55,9 +57,9 @@ export async function POST(req: Request) {
     }
 
     // 3. Increment buyer count
-    const buyerCollRef = doc(db, 'playerCollections', buyerId);
-    const buyerCollSnap = await getDoc(buyerCollRef);
-    let buyerCards = buyerCollSnap.exists() ? buyerCollSnap.data().cards || [] : [];
+    const buyerCollRef = adminDb.collection('playerCollections').doc(buyerId);
+    const buyerCollSnap = await buyerCollRef.get();
+    let buyerCards = buyerCollSnap.exists ? buyerCollSnap.data()?.cards || [] : [];
     const bCardIndex = buyerCards.findIndex((c: any) => c.cardId === listingData.cardId);
     if (bCardIndex !== -1) {
       buyerCards[bCardIndex].count += 1;
@@ -67,7 +69,7 @@ export async function POST(req: Request) {
     batch.set(buyerCollRef, { cards: buyerCards }, { merge: true });
 
     // 4. Create transaction record
-    const txRef = doc(collection(db, 'transactions'));
+    const txRef = adminDb.collection('transactions').doc();
     batch.set(txRef, {
       listingId,
       cardId: listingData.cardId,
@@ -75,14 +77,14 @@ export async function POST(req: Request) {
       buyerUid: buyerId,
       price: listingData.price,
       currency: listingData.currency,
-      timestamp: soldAt
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
 
     // 5. Update Value Index
-    const indexRef = doc(db, 'cardValueIndex', listingData.cardId);
-    const indexSnap = await getDoc(indexRef);
-    if (indexSnap.exists()) {
-      const indexData = indexSnap.data();
+    const indexRef = adminDb.collection('cardValueIndex').doc(listingData.cardId);
+    const indexSnap = await indexRef.get();
+    if (indexSnap.exists) {
+      const indexData = indexSnap.data()!;
       const activeListings = Math.max((indexData.activeListings || 0) - 1, 0);
       const totalSales = (indexData.totalSales || 0) + 1;
       
@@ -98,7 +100,7 @@ export async function POST(req: Request) {
         highestSale: newHighestSale,
         averageSale: Math.round(newAverageSale * 10) / 10,
         totalSales,
-        updatedAt: soldAt
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
     }
 

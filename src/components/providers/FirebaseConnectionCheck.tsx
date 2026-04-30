@@ -17,9 +17,20 @@ export function FirebaseConnectionCheck() {
       try {
         console.log("🔄 Starting Firebase Connection Checks...");
         
-        // 1. Check Env Vars (already checked in lib/firebase.ts, but let's confirm here for the UI)
+        // 1. Check Env Vars
         if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
           throw new Error("Missing Firebase Project ID in environment variables");
+        }
+
+        console.log("📍 Firebase Project:", process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+
+        // Try to force Firestore to be online
+        try {
+          const { enableNetwork } = require('firebase/firestore');
+          await enableNetwork(db);
+          console.log("📡 Firestore network connectivity enabled.");
+        } catch (e) {
+          console.warn("Could not explicitly enable network (expected on server/re-init)");
         }
 
         // 2. Check Auth Connection

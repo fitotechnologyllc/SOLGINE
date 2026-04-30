@@ -29,7 +29,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Use onSnapshot for real-time updates of user data (like balance, roles)
         const unsubDoc = onSnapshot(userDocRef, async (docSnap) => {
           if (docSnap.exists()) {
-            setUser(docSnap.data() as User);
+            const data = docSnap.data();
+            setUser({ ...data, uid: firebaseUser.uid } as User);
           } else {
             // Create new user profile
             const newUser: User = {

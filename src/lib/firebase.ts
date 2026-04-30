@@ -1,23 +1,13 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps, getApp, deleteApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { 
+  getFirestore, 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
-
-const requiredFirebaseVars = [
-  'NEXT_PUBLIC_FIREBASE_API_KEY',
-  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
-  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-  'NEXT_PUBLIC_FIREBASE_APP_ID'
-];
-
-requiredFirebaseVars.forEach((envVar) => {
-  if (!process.env[envVar]) {
-    console.warn(`⚠️ [FIREBASE CONFIG WARNING] Missing environment variable: ${envVar}`);
-  }
-});
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -28,25 +18,42 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase gracefully
-let app;
-try {
-  // Try to initialize with the real config first
-  if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY && process.env.NODE_ENV === 'production') {
-     throw new Error("Missing env vars in prod build");
+// Initialize Firebase
+let app: any;
+const apps = getApps();
+
+if (apps.length > 0) {
+  app = apps[0];
+} else {
+  // Validate config
+  const missingKeys = Object.entries(firebaseConfig)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+
+  if (missingKeys.length > 0 && typeof window !== 'undefined') {
+    console.error("❌ [SOLGINE] Missing Firebase Config Keys:", missingKeys);
   }
-  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-} catch (e) {
-  // During build time on server environments without env vars, this will fail. We provide a dummy app.
-  app = initializeApp({ 
-    apiKey: 'dummy-api-key-for-build-time-only',
-    projectId: 'dummy-project', 
-    appId: '1:123456789:web:abcdef'
-  }, 'build-time-fallback');
+  
+  app = initializeApp(firebaseConfig);
 }
 
 const auth = getAuth(app);
-const db = getFirestore(app);
+
+// Initialize Firestore for 'solgine' database instance
+let db: any;
+try {
+  // Using the more stable getFirestore for named database instead of initializeFirestore with persistence
+  // We'll let Firestore handle internal caching by default
+  db = getFirestore(app, 'solgine');
+  if (typeof window !== 'undefined') {
+    console.log("✅ [SOLGINE] Firestore connected to 'solgine' database instance.");
+  }
+} catch (e) {
+  console.error("❌ [SOLGINE] Firestore Init Error:", e);
+  // Fallback to default database if 'solgine' fails
+  db = getFirestore(app);
+}
+
 const storage = getStorage(app);
 const functions = getFunctions(app);
 

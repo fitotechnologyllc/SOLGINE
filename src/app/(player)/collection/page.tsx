@@ -6,12 +6,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { collection, query, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { Library, Search, Filter, Sword, Shield, Zap, X, TrendingUp } from 'lucide-react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Library, Search, Filter, Sword, Shield, Zap, X, TrendingUp, Sparkles, RefreshCw, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import { ValueIndexPanel } from '@/components/ui/ValueIndexPanel';
 
 export default function CollectionPage() {
+  const router = useRouter();
   const [cards, setCards] = useState<any[]>([]);
   const [valueIndices, setValueIndices] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -22,6 +25,8 @@ export default function CollectionPage() {
   const [sellModalOpen, setSellModalOpen] = useState(false);
   const [sellPrice, setSellPrice] = useState('');
   const [isListing, setIsListing] = useState(false);
+  const [isMinting, setIsMinting] = useState(false);
+  const [mintResult, setMintResult] = useState<any | null>(null);
 
   const { user } = useAuth();
 
@@ -40,7 +45,7 @@ export default function CollectionPage() {
           if (c.count <= 0) return null;
           const cardDoc = await getDoc(doc(db, 'cards', c.cardId));
           if (!cardDoc.exists()) return null;
-          return { ...cardDoc.data(), count: c.count, listedCount: c.listedCount || 0, id: c.cardId };
+          return { ...cardDoc.data(), count: c.count, listedCount: c.listedCount || 0, mintedCount: c.mintedCount || 0, id: c.cardId };
         });
         
         fullCards = (await Promise.all(cardPromises)).filter(Boolean);
@@ -109,7 +114,7 @@ export default function CollectionPage() {
   }, [cards, valueIndices]);
 
   const handleSellSubmit = async () => {
-    if (!selectedCard || !sellPrice) return;
+    if (!selectedCard || !sellPrice || isListing) return;
     const price = parseFloat(sellPrice);
     if (isNaN(price) || price <= 0) {
       toast.error('Invalid price');
@@ -142,6 +147,53 @@ export default function CollectionPage() {
       toast.error(e.message || 'Failed to list card');
     } finally {
       setIsListing(false);
+    }
+  };
+
+  const { publicKey, signMessage } = useWallet();
+
+  const handleMintToSolana = async () => {
+    if (!selectedCard) return;
+    if (!publicKey || !signMessage) {
+      toast.error('Please connect your Solana wallet first');
+      return;
+    }
+
+    const unmintedCount = (selectedCard.count || 0) - (selectedCard.mintedCount || 0);
+    if (unmintedCount <= 0) {
+      toast.error('All copies of this card have already been minted');
+      return;
+    }
+
+    setIsMinting(true);
+    try {
+      const message = `SOLGINE MINT: ${selectedCard.name}\n\nI confirm the minting of this ${selectedCard.rarity} card to my wallet: ${publicKey.toBase58()}`;
+      const encodedMessage = new TextEncoder().encode(message);
+      const signature = await signMessage(encodedMessage);
+
+      const res = await fetch('/api/mint/card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.uid,
+          cardId: selectedCard.id,
+          publicKey: publicKey.toBase58(),
+          signature: Array.from(signature),
+          message
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setMintResult(data);
+      toast.success('NFT Minted Successfully!');
+      await fetchCollection(); // refresh data
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || 'Minting failed');
+    } finally {
+      setIsMinting(false);
     }
   };
 
@@ -273,6 +325,11 @@ export default function CollectionPage() {
                          <TrendingUp size={8} /> Listed
                        </div>
                      )}
+                     {(card.mintedCount || 0) > 0 && (
+                       <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-primary/20 text-[8px] font-black text-primary border border-primary/20 flex items-center gap-1">
+                         <Sparkles size={8} /> On-Chain
+                       </div>
+                     )}
                   </div>
                   
                   <h3 className="text-xs font-black font-space text-white truncate">{card.name}</h3>
@@ -297,7 +354,7 @@ export default function CollectionPage() {
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col md:flex-row relative">
             <button 
-              onClick={() => { setSelectedCard(null); setSellModalOpen(false); }}
+              onClick={() => { setSelectedCard(null); setSellModalOpen(false); setMintResult(null); }}
               className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all"
             >
               <X size={18} />
@@ -351,6 +408,10 @@ export default function CollectionPage() {
                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Base Value</p>
                     <p className="text-xl font-black text-white">{selectedCard.estimatedValue || 0} <span className="text-[10px] text-zinc-500">SOLG</span></p>
                   </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Minted</p>
+                    <p className="text-xl font-black text-primary">{selectedCard.mintedCount || 0}</p>
+                  </div>
                </div>
 
                <ValueIndexPanel index={valueIndices[selectedCard.id] || null} />
@@ -384,19 +445,61 @@ export default function CollectionPage() {
                      </button>
                    </div>
                  </div>
-               ) : (
-                 <div className="flex flex-wrap gap-3 pt-2">
-                    <button className="flex-1 bg-primary text-black font-black font-space text-sm tracking-widest uppercase py-3 px-4 rounded-xl shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:scale-105 transition-all">
-                      Add to Deck
-                    </button>
+               ) : mintResult ? (
+                  <div className="glass-card p-6 space-y-4 border-primary/30 bg-primary/5">
+                    <div className="flex items-center gap-3 text-primary">
+                      <Sparkles size={24} />
+                      <h4 className="text-lg font-black font-space uppercase">NFT Minted Successfully</h4>
+                    </div>
+                    <div className="bg-black/40 p-3 rounded-xl border border-white/10 break-all">
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Mint Address</p>
+                      <p className="text-xs font-mono text-white">{mintResult.mintAddress}</p>
+                    </div>
                     <button 
-                      onClick={() => setSellModalOpen(true)}
-                      className="flex-1 bg-secondary text-black font-black font-space text-sm tracking-widest uppercase py-3 px-4 rounded-xl shadow-[0_0_15px_rgba(20,241,149,0.3)] hover:scale-105 transition-all"
+                      onClick={() => window.open(mintResult.explorerUrl, '_blank')}
+                      className="w-full bg-white/10 border border-white/10 text-white font-black font-space text-sm tracking-widest uppercase py-3 rounded-xl hover:bg-white/20 transition-all flex items-center justify-center gap-2"
                     >
-                      Sell Card
+                      <ExternalLink size={16} /> View on Explorer
                     </button>
-                 </div>
-               )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 pt-2">
+                     <div className="flex gap-3">
+                        <button 
+                          onClick={() => router.push('/decks')}
+                          className="flex-1 bg-primary text-black font-black font-space text-sm tracking-widest uppercase py-3 px-4 rounded-xl shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:scale-105 transition-all"
+                        >
+                          Add to Deck
+                        </button>
+                        <button 
+                          onClick={() => setSellModalOpen(true)}
+                          className="flex-1 bg-secondary text-black font-black font-space text-sm tracking-widest uppercase py-3 px-4 rounded-xl shadow-[0_0_15px_rgba(20,241,149,0.3)] hover:scale-105 transition-all"
+                        >
+                          Sell Card
+                        </button>
+                     </div>
+
+                     {['epic', 'legendary', 'mythic'].includes(selectedCard.rarity?.toLowerCase()) && (
+                       <button 
+                         onClick={handleMintToSolana}
+                         disabled={isMinting || (selectedCard.count - (selectedCard.mintedCount || 0)) <= 0}
+                         className="w-full bg-gradient-to-r from-primary to-blue-500 text-white font-black font-space text-sm tracking-widest uppercase py-4 px-4 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:scale-[1.02] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-3"
+                       >
+                         {isMinting ? (
+                           <><RefreshCw size={18} className="animate-spin" /> Minting to Solana...</>
+                         ) : (
+                           <><Sparkles size={18} /> Mint to Solana NFT</>
+                         )}
+                       </button>
+                     )}
+                     
+                     {!publicKey && ['epic', 'legendary', 'mythic'].includes(selectedCard.rarity?.toLowerCase()) && (
+                       <p className="text-[10px] text-center text-zinc-500 font-bold uppercase tracking-widest mt-1">
+                         Connect wallet to enable on-chain minting
+                       </p>
+                     )}
+                  </div>
+                )}
             </div>
           </div>
         </div>

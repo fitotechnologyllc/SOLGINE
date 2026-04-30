@@ -10,6 +10,13 @@ const SEED_CARDS = [
   { id: 'c_mythic_sol', name: 'Mythic Sol Dragon', rarity: 'mythic', type: 'character', attack: 300, defense: 250, ability: 'Solar Flare', estimatedValue: 1500, supplyLimit: 10, mintedCount: 0 }
 ];
 
+const SEED_PACKS_FALLBACK = [
+  { id: 'pack_starter', name: 'Starter Pack', price: 10, cardsPerPack: 3, rarityOdds: { common: 65, uncommon: 20, rare: 10, epic: 4, legendary: 0.9, mythic: 0.1 } },
+  { id: 'pack_standard', name: 'Standard Pack', price: 50, cardsPerPack: 5, rarityOdds: { common: 50, uncommon: 30, rare: 15, epic: 4, legendary: 0.9, mythic: 0.1 } },
+  { id: 'pack_premium', name: 'Premium Pack', price: 250, cardsPerPack: 7, rarityOdds: { common: 20, uncommon: 30, rare: 30, epic: 15, legendary: 4, mythic: 1 } },
+  { id: 'pack_elite', name: 'Elite Pack', price: 1000, cardsPerPack: 10, rarityOdds: { common: 0, uncommon: 10, rare: 40, epic: 30, legendary: 15, mythic: 5 } },
+];
+
 export async function POST(req: Request) {
   try {
     console.log("REQUEST RECEIVED");
@@ -44,24 +51,44 @@ export async function POST(req: Request) {
     const userId = decodedToken.uid;
 
     const body = await req.json();
-    const { packId } = body;
+    const { packId, useCredit } = body;
 
     console.log("USER:", userId);
     console.log("PACK ID:", packId);
+    console.log("USE CREDIT:", useCredit);
 
     if (!packId) {
       throw new Error("INVALID_REQUEST: A valid pack ID is required.");
     }
 
+    const userRef = adminDb.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+    const userData = userSnap.data() || {};
+
+    const creditKey = packId.replace('pack_', '') + 'Credits';
+    const hasCredit = (userData[creditKey] || 0) > 0;
+
+    if (useCredit && !hasCredit) {
+      throw new Error("INSUFFICIENT_CREDITS: You do not have enough credits for this pack.");
+    }
+
+    // Deduction logic will happen in the batch below
+    
     console.log("FETCHING PACK...");
     const packRef = adminDb.collection('boosterPacks').doc(packId);
     const packSnap = await packRef.get();
     
+    let packData: any;
     if (!packSnap.exists) {
-      throw new Error("PACK_NOT_FOUND");
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Pack ${packId} not found in DB. Using fallback for dev.`);
+        packData = SEED_PACKS_FALLBACK.find(p => p.id === packId) || SEED_PACKS_FALLBACK[0];
+      } else {
+        throw new Error("PACK_NOT_FOUND");
+      }
+    } else {
+      packData = packSnap.data();
     }
-    
-    const packData = packSnap.data();
     console.log("PACK DATA:", packData);
 
     console.log("FETCHING CARDS...");
@@ -157,6 +184,13 @@ export async function POST(req: Request) {
     const batch = adminDb.batch();
     batch.set(playerCollRef, { cards: existingCards }, { merge: true });
 
+    if (useCredit) {
+      batch.set(userRef, { 
+        [creditKey]: adminApp.firestore.FieldValue.increment(-1),
+        [`last${creditKey.charAt(0).toUpperCase() + creditKey.slice(1)}`]: userData[creditKey] || 0
+      }, { merge: true });
+    }
+
     console.log("WRITING PACK OPENING...");
     const openingRef = adminDb.collection('packOpenings').doc();
     batch.set(openingRef, {
@@ -164,6 +198,7 @@ export async function POST(req: Request) {
       packId,
       createdAt: new Date().toISOString(),
       cardsPulled: pulledCards.map((c: any) => c.id),
+      usedCredit: !!useCredit,
       source: 'off-chain'
     });
 

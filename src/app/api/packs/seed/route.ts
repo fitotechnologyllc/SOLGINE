@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 
 const SEED_PACKS = [
   { id: 'pack_starter', name: 'Starter Pack', description: 'Begin your journey.', price: 10, cardsPerPack: 3, status: 'active', rarityOdds: { common: 65, uncommon: 20, rare: 10, epic: 4, legendary: 0.9, mythic: 0.1 }, visualStyle: 'teal' },
@@ -10,35 +9,39 @@ const SEED_PACKS = [
 ];
 
 const SEED_CARDS = [
-  { id: 'card_1', name: 'Pulse Reaper', type: 'character', rarity: 'common', attack: 10, defense: 5, estimatedValue: 1 },
-  { id: 'card_2', name: 'Iron Phalanx', type: 'character', rarity: 'common', attack: 5, defense: 15, estimatedValue: 1 },
-  { id: 'card_3', name: 'Neon Strider', type: 'character', rarity: 'uncommon', attack: 15, defense: 10, estimatedValue: 5 },
-  { id: 'card_4', name: 'Cyber Hound', type: 'character', rarity: 'uncommon', attack: 12, defense: 8, estimatedValue: 5 },
-  { id: 'card_5', name: 'Nova Guardian', type: 'character', rarity: 'rare', attack: 25, defense: 25, estimatedValue: 20 },
-  { id: 'card_6', name: 'Plasma Aegis', type: 'spell', rarity: 'rare', attack: 0, defense: 30, estimatedValue: 20 },
-  { id: 'card_7', name: 'Void Walker', type: 'character', rarity: 'epic', attack: 40, defense: 15, estimatedValue: 100 },
-  { id: 'card_8', name: 'Celestial Dragon', type: 'character', rarity: 'legendary', attack: 80, defense: 60, estimatedValue: 500 },
-  { id: 'card_9', name: 'Omega Protocol', type: 'spell', rarity: 'mythic', attack: 0, defense: 0, ability: 'Destroy all cards', estimatedValue: 2000 },
+  { id: 'card_1', name: 'Pulse Reaper', type: 'character', rarity: 'common', attack: 10, defense: 5, estimatedValue: 1, imageUrl: 'https://firebasestorage.googleapis.com/v0/b/solgine-3a3c6.firebasestorage.app/o/cards%2Fpulse_reaper.png?alt=media' },
+  { id: 'card_2', name: 'Iron Phalanx', type: 'character', rarity: 'common', attack: 5, defense: 15, estimatedValue: 1, imageUrl: 'https://firebasestorage.googleapis.com/v0/b/solgine-3a3c6.firebasestorage.app/o/cards%2Firon_phalanx.png?alt=media' },
+  { id: 'card_3', name: 'Neon Strider', type: 'character', rarity: 'uncommon', attack: 15, defense: 10, estimatedValue: 5, imageUrl: 'https://firebasestorage.googleapis.com/v0/b/solgine-3a3c6.firebasestorage.app/o/cards%2Fneon_strider.png?alt=media' },
+  { id: 'card_4', name: 'Cyber Hound', type: 'character', rarity: 'uncommon', attack: 12, defense: 8, estimatedValue: 5, imageUrl: 'https://firebasestorage.googleapis.com/v0/b/solgine-3a3c6.firebasestorage.app/o/cards%2Fcyber_hound.png?alt=media' },
+  { id: 'card_5', name: 'Nova Guardian', type: 'character', rarity: 'rare', attack: 25, defense: 25, estimatedValue: 20, imageUrl: 'https://firebasestorage.googleapis.com/v0/b/solgine-3a3c6.firebasestorage.app/o/cards%2Fnova_guardian.png?alt=media' },
+  { id: 'card_6', name: 'Plasma Aegis', type: 'spell', rarity: 'rare', attack: 0, defense: 30, estimatedValue: 20, imageUrl: 'https://firebasestorage.googleapis.com/v0/b/solgine-3a3c6.firebasestorage.app/o/cards%2Fplasma_aegis.png?alt=media' },
+  { id: 'card_7', name: 'Void Walker', type: 'character', rarity: 'epic', attack: 40, defense: 15, estimatedValue: 100, imageUrl: 'https://firebasestorage.googleapis.com/v0/b/solgine-3a3c6.firebasestorage.app/o/cards%2Fvoid_walker.png?alt=media' },
+  { id: 'card_8', name: 'Celestial Dragon', type: 'character', rarity: 'legendary', attack: 80, defense: 60, estimatedValue: 500, imageUrl: 'https://firebasestorage.googleapis.com/v0/b/solgine-3a3c6.firebasestorage.app/o/cards%2Fcelestial_dragon.png?alt=media' },
+  { id: 'card_9', name: 'Omega Protocol', type: 'spell', rarity: 'mythic', attack: 0, defense: 0, ability: 'Destroy all cards', estimatedValue: 2000, imageUrl: 'https://firebasestorage.googleapis.com/v0/b/solgine-3a3c6.firebasestorage.app/o/cards%2Fomega_protocol.png?alt=media' },
 ];
 
 export async function POST() {
   try {
-    const packsSnap = await getDocs(collection(db, 'boosterPacks'));
-    if (!packsSnap.empty) {
-      return NextResponse.json({ message: 'Already seeded' });
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
     }
 
-    const batch = writeBatch(db);
+    const packsSnap = await adminDb.collection('boosterPacks').get();
+    const batch = adminDb.batch();
+
+    // Always re-seed or update if needed for this task to ensure 'solgine' DB has data
     for (const p of SEED_PACKS) {
-      batch.set(doc(db, 'boosterPacks', p.id), p);
+      batch.set(adminDb.collection('boosterPacks').doc(p.id), p);
     }
     for (const c of SEED_CARDS) {
-      batch.set(doc(db, 'cards', c.id), c);
+      batch.set(adminDb.collection('cards').doc(c.id), c);
     }
+    
     await batch.commit();
 
-    return NextResponse.json({ message: 'Seeded successfully' });
+    return NextResponse.json({ message: 'Seeded successfully into solgine database' });
   } catch (error: any) {
+    console.error('Seed error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

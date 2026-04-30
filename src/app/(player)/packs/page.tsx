@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, getDocs, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -26,6 +26,7 @@ export default function PacksPage() {
   const { user } = useAuth();
   const { connected } = useWallet();
   const router = useRouter();
+  const [userData, setUserData] = useState<any>(null);
 
   const [mounted, setMounted] = useState(false);
 
@@ -47,16 +48,9 @@ export default function PacksPage() {
     const unsubscribe = onSnapshot(q, 
       (snap) => {
         if (!isMounted) return;
-        
-        console.log(`Firestore connected. Received ${snap.docs.length} packs.`);
-        
-        // Auto-recover if previously erroring
         setError(null);
-        
         if (snap.empty) {
-          console.log("Firestore packs empty. Showing fallbacks and seeding dev db.");
           setPacks(FALLBACK_PACKS);
-          
           if (process.env.NODE_ENV === 'development') {
             fetch('/api/packs/seed', { method: 'POST' }).catch(console.error);
           }
@@ -66,41 +60,26 @@ export default function PacksPage() {
         setLoading(false);
       },
       (e) => {
-        console.error("Firestore Listener Error:", e);
         if (!isMounted) return;
-        
         setError("Connection is slow — loading local preview packs.");
         setPacks(FALLBACK_PACKS);
         setLoading(false);
       }
     );
 
-    // Also monitor standard browser online/offline events for immediate UI feedback
-    const handleOnline = () => {
-      console.log("Network restored.");
-      setError(null);
-    };
-    
-    const handleOffline = () => {
-      console.log("Network disconnected.");
-      setError("Connection is slow — loading local preview packs.");
-      setPacks(FALLBACK_PACKS);
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('online', handleOnline);
-      window.addEventListener('offline', handleOffline);
+    let userUnsub = () => {};
+    if (user) {
+      userUnsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+        if (isMounted && docSnap.exists()) setUserData(docSnap.data());
+      });
     }
 
     return () => {
       isMounted = false;
       unsubscribe();
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
-      }
+      userUnsub();
     };
-  }, []);
+  }, [user]);
 
   const handleOpenPack = async (packId: string) => {
     if (!user || !auth.currentUser) {
@@ -118,7 +97,7 @@ export default function PacksPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ userId: user.uid, packId })
+        body: JSON.stringify({ userId: user.uid, packId, useCredit: true })
       });
       
       let data;
@@ -213,42 +192,54 @@ export default function PacksPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {packs.map((pack) => (
-            <div key={pack.id} className="bg-[#0a0a0a]/80 backdrop-blur-xl p-8 rounded-[24px] flex flex-col gap-6 relative overflow-hidden group border border-white/5 hover:border-primary/40 hover:shadow-[0_8px_30px_rgba(168,85,247,0.15)] transition-all duration-300">
-              <div className="flex justify-between items-start relative z-10">
-                <div>
-                  <h3 className="text-2xl font-black font-space text-white drop-shadow-md">{pack.name}</h3>
-                  <p className="text-zinc-400 text-sm font-medium mt-1">{pack.cardsPerPack} Digital Assets</p>
+          {packs.map((pack) => {
+            const creditKey = pack.id.replace('pack_', '') + 'Credits';
+            const credits = userData?.[creditKey] || 0;
+            
+            return (
+              <div key={pack.id} className="bg-[#0a0a0a]/80 backdrop-blur-xl p-8 rounded-[24px] flex flex-col gap-6 relative overflow-hidden group border border-white/5 hover:border-primary/40 hover:shadow-[0_8px_30px_rgba(168,85,247,0.15)] transition-all duration-300">
+                <div className="flex justify-between items-start relative z-10">
+                  <div>
+                    <h3 className="text-2xl font-black font-space text-white drop-shadow-md">{pack.name}</h3>
+                    <p className="text-zinc-400 text-sm font-medium mt-1">{pack.cardsPerPack} Digital Assets</p>
+                  </div>
+                  {credits > 0 && (
+                    <div className="px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] uppercase font-black font-space tracking-widest shadow-[0_0_10px_rgba(20,241,149,0.2)]">
+                      {credits} CREDITS
+                    </div>
+                  )}
                 </div>
-                <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] uppercase font-black font-space tracking-widest shadow-[0_0_10px_rgba(168,85,247,0.2)]">
-                  LIVE
+
+                <div className="space-y-2 relative z-10 flex-1">
+                   <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Drop Rates</p>
+                   <p className="text-[11px] font-mono text-zinc-400 leading-relaxed bg-[#111] p-3 rounded-xl border border-white/5">
+                     {formatOdds(pack.rarityOdds)}
+                   </p>
                 </div>
+
+                <div className="flex items-center gap-2 mt-auto relative z-10">
+                   <Zap size={18} className="text-secondary fill-secondary" />
+                   <span className="text-3xl font-black font-space text-white">{pack.price}</span>
+                   <span className="text-zinc-500 text-xs font-bold font-space ml-1 uppercase">SOLG</span>
+                </div>
+
+                <button 
+                  onClick={() => handleOpenPack(pack.id)}
+                  disabled={opening}
+                  className={cn(
+                    "w-full py-4 mt-2 rounded-xl text-black font-black font-space text-sm tracking-widest uppercase shadow-lg transition-all relative z-10 disabled:opacity-50 disabled:grayscale",
+                    credits > 0 
+                      ? "bg-secondary hover:shadow-[0_0_20px_#14F195]" 
+                      : "bg-white hover:bg-zinc-200"
+                  )}
+                >
+                  {credits > 0 ? "USE PACK CREDIT" : "OPEN WITH SOLG"}
+                </button>
+
+                <Package size={160} className="absolute -bottom-10 -right-10 text-white/5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 z-0" />
               </div>
-
-              <div className="space-y-2 relative z-10 flex-1">
-                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Drop Rates</p>
-                 <p className="text-[11px] font-mono text-zinc-400 leading-relaxed bg-[#111] p-3 rounded-xl border border-white/5">
-                   {formatOdds(pack.rarityOdds)}
-                 </p>
-              </div>
-
-              <div className="flex items-center gap-2 mt-auto relative z-10">
-                 <Zap size={18} className="text-secondary fill-secondary" />
-                 <span className="text-3xl font-black font-space text-white">{pack.price}</span>
-                 <span className="text-zinc-500 text-xs font-bold font-space ml-1 uppercase">SOLG</span>
-              </div>
-
-              <button 
-                onClick={() => handleOpenPack(pack.id)}
-                disabled={opening}
-                className="w-full py-4 mt-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black font-space text-sm tracking-widest uppercase shadow-[0_4px_15px_rgba(168,85,247,0.4)] hover:shadow-[0_4px_25px_rgba(168,85,247,0.6)] hover:scale-[1.02] active:scale-[0.98] transition-all relative z-10 disabled:opacity-50 disabled:grayscale"
-              >
-                OPEN PACK
-              </button>
-
-              <Package size={160} className="absolute -bottom-10 -right-10 text-white/5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 z-0" />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

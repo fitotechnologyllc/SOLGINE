@@ -6,6 +6,11 @@ import { decodeUTF8 } from 'tweetnacl-util';
 
 export async function POST(req: Request) {
   try {
+    if (!adminDb || !adminAuth) {
+      console.warn("SERVER_FIREBASE_ADMIN_NOT_CONFIGURED");
+      return NextResponse.json({ error: 'Server authentication module not configured' }, { status: 500 });
+    }
+
     const { publicKey, signature, message, userId } = await req.json();
 
     if (!publicKey || !signature || !message || !userId) {

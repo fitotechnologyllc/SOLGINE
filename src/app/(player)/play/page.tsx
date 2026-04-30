@@ -1,13 +1,40 @@
 'use client';
 
-import { useState } from 'react';
-import { Swords, Zap, Users, Trophy, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Swords, Zap, Users, Trophy, Loader2, Sparkles, ShieldCheck, Hammer, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 export default function PlayPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [searching, setSearching] = useState(false);
   const [matchFound, setMatchFound] = useState(false);
+  const [activeDeck, setActiveDeck] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(
+      collection(db, 'decks'), 
+      where('userId', '==', user.uid),
+      where('isActive', '==', true)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        setActiveDeck(snap.docs[0].data());
+      } else {
+        setActiveDeck(null);
+      }
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [user]);
 
   const startMatchmaking = () => {
     setSearching(true);
@@ -16,6 +43,24 @@ export default function PlayPage() {
       setSearching(false);
       setMatchFound(true);
     }, 4000);
+  };
+
+  const startPracticeMatch = async () => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/battle/start', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      router.push(`/play/battle/${data.matchId}`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   return (
@@ -42,16 +87,18 @@ export default function PlayPage() {
                  desc="Test your deck strategies against advanced neural combatants."
                  icon={Users}
                  color="teal"
-                 onClick={startMatchmaking}
+                 onClick={startPracticeMatch}
                />
                <GameModeCard 
-                 title="PvP (COMING SOON)" 
-                 desc="Face off against real players in ranked matchmaking."
-                 icon={Trophy}
+                 title="DECK FORGE" 
+                 desc="Configure your 10-card battle lineup for optimal power."
+                 icon={Hammer}
                  color="purple"
-                 onClick={() => {}}
+                 onClick={() => router.push('/decks')}
                />
             </div>
+
+            <ActiveDeckStatus />
           </motion.div>
         )}
 
@@ -155,3 +202,70 @@ function MatchPlayer({ name, rank, avatar, enemy }: any) {
     </div>
   );
 }
+
+function ActiveDeckStatus() {
+  const { user } = useAuth();
+  const [activeDeck, setActiveDeck] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(
+      collection(db, 'decks'), 
+      where('userId', '==', user.uid),
+      where('isActive', '==', true)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        setActiveDeck(snap.docs[0].data());
+      } else {
+        setActiveDeck(null);
+      }
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [user]);
+
+  if (loading) return null;
+
+  return (
+    <div className="w-full max-w-md mx-auto mt-8">
+       {activeDeck ? (
+         <div className="glass-card p-4 flex items-center justify-between border-secondary/20 bg-secondary/5">
+            <div className="flex items-center gap-4 text-left">
+               <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+                  <CheckCircle2 size={20} />
+               </div>
+               <div>
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Deck</p>
+                  <h4 className="text-sm font-black font-space text-white uppercase">{activeDeck.name}</h4>
+               </div>
+            </div>
+            <div className="text-right">
+               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Power Score</p>
+               <p className="text-lg font-black font-space text-secondary">{activeDeck.powerScore}</p>
+            </div>
+         </div>
+       ) : (
+         <div className="glass-card p-4 flex items-center justify-between border-amber-500/20 bg-amber-500/5">
+            <div className="flex items-center gap-4 text-left">
+               <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+                  <AlertCircle size={20} />
+               </div>
+               <div>
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">No Active Deck</p>
+                  <h4 className="text-sm font-black font-space text-white uppercase">Combat Restricted</h4>
+               </div>
+            </div>
+            <button 
+              onClick={() => window.location.href = '/decks'}
+              className="px-4 py-2 rounded-lg bg-amber-500 text-black font-black font-space text-[10px] uppercase tracking-widest"
+            >
+               Forge Deck
+            </button>
+         </div>
+       )}
+    </div>
+  );
+}
+
