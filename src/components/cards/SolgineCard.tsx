@@ -87,7 +87,8 @@ export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
     price,
     currency = 'SOLG'
   } = props;
-  const style = rarityStyles[rarity];
+  const normalizedRarity = (rarity?.charAt(0).toUpperCase() + rarity?.slice(1).toLowerCase()) as CardRarity;
+  const style = rarityStyles[normalizedRarity] || rarityStyles.Common;
 
   return (
     <motion.div
@@ -96,7 +97,7 @@ export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
       onClick={onClick}
       className={cn(
         "relative group aspect-[3/4.5] w-full max-w-[320px] rounded-[2rem] overflow-hidden cursor-pointer transition-all duration-500 shadow-2xl",
-        rarity === 'Mythic' ? style.border : cn("border bg-gradient-to-b p-2", style.border, style.bg),
+        normalizedRarity === 'Mythic' ? style.border : cn("border bg-gradient-to-b p-2", style.border, style.bg),
         style.glow,
         "hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]",
         className
@@ -105,27 +106,28 @@ export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
       {/* Rarity Glow Animation */}
       <div className={cn(
         "absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-2xl",
-        rarity === 'Common' && "bg-zinc-500/10",
-        rarity === 'Rare' && "bg-blue-500/20",
-        rarity === 'Epic' && "bg-purple-500/30",
-        rarity === 'Legendary' && "bg-amber-500/40",
-        rarity === 'Mythic' && "bg-pink-500/50"
+        normalizedRarity === 'Common' && "bg-zinc-500/10",
+        normalizedRarity === 'Rare' && "bg-blue-500/20",
+        normalizedRarity === 'Epic' && "bg-purple-500/30",
+        normalizedRarity === 'Legendary' && "bg-amber-500/40",
+        normalizedRarity === 'Mythic' && "bg-pink-500/50"
       )} />
 
       {/* Owned Count Badge */}
       {variant === 'collection' && ownedCount !== undefined && (
         <div className="absolute top-4 right-4 z-30 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/20 shadow-xl flex items-center gap-1.5 transform group-hover:scale-110 transition-transform">
            <div className={cn("w-2 h-2 rounded-full animate-pulse", 
-             rarity === 'Common' ? "bg-zinc-400" : 
-             rarity === 'Rare' ? "bg-blue-400" : 
-             rarity === 'Epic' ? "bg-purple-400" : 
-             rarity === 'Legendary' ? "bg-amber-400" : "bg-pink-400"
+             normalizedRarity === 'Common' ? "bg-zinc-400" : 
+             normalizedRarity === 'Rare' ? "bg-blue-400" : 
+             normalizedRarity === 'Epic' ? "bg-purple-400" : 
+             normalizedRarity === 'Legendary' ? "bg-amber-400" : 
+             "bg-pink-400"
            )} />
            <span className="text-[10px] font-black font-space text-white">x{ownedCount}</span>
         </div>
       )}
       {/* Mythic Specific Animated Border/Glow */}
-      {rarity === 'Mythic' && (
+      {normalizedRarity === 'Mythic' && (
         <div className="absolute inset-0 z-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-[spin_4s_linear_infinite] opacity-50 blur-xl" />
       )}
 
