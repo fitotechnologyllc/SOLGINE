@@ -103,9 +103,9 @@ export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
         className
       )}
     >
-      {/* Top Initials Badge (PR / VW / CD) */}
-      <div className="absolute top-3 left-3 z-20 flex items-center justify-center w-8 h-8 rounded-xl bg-black/60 backdrop-blur-xl border border-white/20 shadow-lg transform group-hover:scale-110 transition-transform duration-500">
-        <span className={cn("text-[10px] font-black font-space tracking-tighter", style.text)}>
+      {/* Top Initials Badge (PR / VW / CD) - High Z-Index to avoid covering */}
+      <div className="absolute top-[12px] left-[12px] z-[50] flex items-center justify-center w-9 h-9 rounded-xl bg-black/80 backdrop-blur-2xl border border-white/30 shadow-[0_8px_16px_rgba(0,0,0,0.5)] transform group-hover:scale-110 group-hover:border-white/50 transition-all duration-500">
+        <span className={cn("text-xs font-black font-space tracking-tighter", style.text)}>
           {name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
         </span>
       </div>
@@ -139,8 +139,8 @@ export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
 
       {/* Main Content Container */}
       <div className={cn(
-        "relative z-10 w-full h-full flex flex-col rounded-[1.8rem] overflow-hidden p-1",
-        normalizedRarity === 'Mythic' ? "bg-[#0a0a0a] p-3" : "bg-transparent"
+        "relative z-10 w-full h-full flex flex-col p-1",
+        normalizedRarity === 'Mythic' ? "bg-[#0a0a0a] p-3 rounded-[1.8rem]" : "bg-transparent"
       )}>
         
         {/* TOP: Rarity & ID - Shifted Right to avoid badge */}
@@ -156,8 +156,8 @@ export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
           </div>
         </div>
 
-        <div className="relative h-[180px] rounded-2xl overflow-hidden mb-3 border border-white/10 bg-zinc-950 shadow-2xl group/art z-1">
-          <CardArt card={props} className="w-full h-full scale-105 group-hover/art:scale-110 transition-transform duration-700" />
+        <div className="relative h-[140px] rounded-2xl overflow-hidden mb-3 border border-white/10 bg-zinc-950 shadow-2xl group/art z-[5]">
+          <CardArt card={props} className="w-full h-full scale-110 group-hover/art:scale-125 transition-transform duration-700" />
           
           {/* Finish Effects Overlays */}
           {finish === 'Holographic' && (
