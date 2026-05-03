@@ -6,11 +6,12 @@ import { logEvent, logError } from '@/lib/monitor';
 import { sendNotification } from '@/lib/notifications';
 import { FieldValue } from 'firebase-admin/firestore';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Defensive initialization for build time
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
   apiVersion: '2023-10-16' as any,
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder';
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -53,6 +54,11 @@ async function handleSuccessfulCheckout(session: Stripe.Checkout.Session) {
 
   if (!userId) {
     await logError('Webhook: No userId in session metadata', session);
+    return;
+  }
+
+  if (!db) {
+    await logError('Webhook: Firebase Admin DB not initialized', session);
     return;
   }
 

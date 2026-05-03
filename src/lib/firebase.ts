@@ -30,11 +30,20 @@ if (apps.length > 0) {
     .filter(([_, value]) => !value)
     .map(([key]) => key);
 
-  if (missingKeys.length > 0 && typeof window !== 'undefined') {
-    console.error("❌ [SOLGINE] Missing Firebase Config Keys:", missingKeys);
+  if (missingKeys.length > 0) {
+    if (typeof window !== 'undefined') {
+      console.error("❌ [SOLGINE] Missing Firebase Config Keys:", missingKeys);
+    }
   }
   
-  app = initializeApp(firebaseConfig);
+  // Only initialize if we have the minimum required config (apiKey)
+  if (firebaseConfig.apiKey) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    // During build, we might not have the API key. 
+    // We create a dummy app or return null to prevent crashing.
+    app = { name: '[DEFAULT]-placeholder' } as any;
+  }
 }
 
 const auth = getAuth(app);
