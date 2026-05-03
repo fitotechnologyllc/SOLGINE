@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       break;
     case 'charge.refunded':
       const refund = event.data.object as Stripe.Charge;
-      await logEvent('refund', `Refund processed for charge ${refund.id}`, { metadata: { amount: refund.amount_refunded / 100 } });
+      await logEvent('transaction', `Refund processed for charge ${refund.id}`, { metadata: { amount: refund.amount_refunded / 100 } });
       break;
     default:
       console.log(`Unhandled event type ${event.type}`);

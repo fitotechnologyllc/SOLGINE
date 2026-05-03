@@ -4,6 +4,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Zap, Swords, Box, Info, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getRarityColor } from '@/lib/card-utils';
+import { CardArt } from './CardArt';
+import { getCardImage } from '@/lib/card-media';
 
 export type CardRarity = 'Common' | 'Rare' | 'Epic' | 'Legendary' | 'Mythic';
 export type CardFinish = 'None' | 'Holographic' | 'Animated Holo' | 'Prismatic' | 'Glitch' | 'Mythic Aura';
@@ -62,19 +65,20 @@ const rarityStyles: Record<CardRarity, { border: string; bg: string; glow: strin
   },
 };
 
-export const SolgineCard: React.FC<SolgineCardProps> = ({
-  cardId,
-  name,
-  type,
-  rarity,
-  finish = 'None',
-  artworkUrl,
-  stats,
-  description,
-  projectLogo,
-  className,
-  onClick,
-}) => {
+export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
+  const {
+    cardId,
+    name,
+    type,
+    rarity,
+    finish = 'None',
+    artworkUrl,
+    stats,
+    description,
+    projectLogo,
+    className,
+    onClick,
+  } = props;
   const style = rarityStyles[rarity];
 
   return (
@@ -113,13 +117,8 @@ export const SolgineCard: React.FC<SolgineCardProps> = ({
           </div>
         </div>
 
-        {/* CENTER: Artwork */}
         <div className="relative flex-1 rounded-2xl overflow-hidden mb-4 border border-white/5 bg-zinc-900 shadow-inner group">
-          <img 
-            src={artworkUrl} 
-            alt={name} 
-            className="w-full h-full object-cover object-top transform transition-transform duration-700 group-hover:scale-105"
-          />
+          <CardArt card={props} className="w-full h-full" />
           
           {/* Finish Effects Overlays */}
           {finish === 'Holographic' && (

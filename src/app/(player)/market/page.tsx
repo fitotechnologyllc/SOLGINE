@@ -11,6 +11,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { toast } from 'react-hot-toast';
 import { ValueIndexPanel } from '@/components/ui/ValueIndexPanel';
+import { getCardImage } from '@/lib/card-utils';
 
 export default function MarketPage() {
   const { projectId } = useProject();
@@ -300,11 +301,15 @@ export default function MarketPage() {
                  view === 'grid' ? "aspect-square w-full" : "w-24 h-24 shrink-0"
                )}>
                   <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
-                    {item.cardImageUrl ? (
-                      <img src={item.cardImageUrl} alt={item.cardName} className="w-full h-full object-cover" />
-                    ) : (
-                      <Library size={32} className="text-white/20" />
-                    )}
+                    <img 
+                      src={getCardImage(item)} 
+                      alt={item.cardName} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/card-fallback.png';
+                      }}
+                    />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                   
@@ -362,13 +367,15 @@ export default function MarketPage() {
                  selectedListing.rarity?.toLowerCase() === 'legendary' ? "border-2 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.3)]" : 
                  selectedListing.rarity?.toLowerCase() === 'mythic' ? "border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]" : "border border-white/10"
                )}>
-                 {selectedListing.cardImageUrl ? (
-                   <img src={selectedListing.cardImageUrl} alt={selectedListing.cardName} className="w-full h-full object-cover" />
-                 ) : (
-                   <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
-                     <Library size={48} className="text-zinc-700" />
-                   </div>
-                 )}
+                  <img 
+                    src={getCardImage(selectedListing)} 
+                    alt={selectedListing.cardName} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/images/card-fallback.png';
+                    }}
+                  />
                </div>
                
                {cardDetails[selectedListing.cardId] && (

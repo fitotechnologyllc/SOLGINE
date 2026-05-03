@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const projectId = reqProjectId || 'solgine-core';
 
     // 2. TRANSACTIONAL EXECUTION
-    const result = await adminDb.runTransaction(async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction: any) => {
       // 2.1 Check for already active matches (Prevent double match)
       const existingQuery = adminDb.collection('matches')
         .where('userId', '==', userId)
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         .where('status', '==', 'active')
         .limit(20);
       const allCardsSnap = await transaction.get(allCardsQuery);
-      let availableCards = allCardsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      let availableCards = allCardsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
       const aiDeckCards = availableCards.sort(() => 0.5 - Math.random()).slice(0, 10);
 
       // 2.5 Initialize State
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
       return { success: true, matchId, match: matchState };
     });
 
-    await logEvent('battle_start', `User ${userId} started battle ${result.matchId}`, { userId });
+    await logEvent('api_success', `User ${userId} started battle ${result.matchId}`, { userId });
     return NextResponse.json(result);
 
   } catch (error: any) {

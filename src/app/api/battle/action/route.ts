@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     }
 
     // 2. TRANSACTIONAL EXECUTION
-    const result = await adminDb.runTransaction(async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction: any) => {
       const matchRef = adminDb.collection('matches').doc(matchId);
       const matchSnap = await transaction.get(matchRef);
 

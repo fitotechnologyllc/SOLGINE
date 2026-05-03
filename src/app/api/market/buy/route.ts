@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     }
 
     // 2. TRANSACTIONAL EXECUTION
-    const result = await adminDb.runTransaction(async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction: any) => {
       // READ PHASE
       const listingRef = adminDb.collection('marketListings').doc(listingId);
       const listingSnap = await transaction.get(listingRef);
@@ -193,7 +193,7 @@ export async function POST(req: Request) {
     const estValue = indexSnap.exists ? indexSnap.data()?.estimatedValue || 0 : 0;
     await checkMarketManipulation(buyerId, listingData.sellerUid, listingData.cardId, listingData.price, estValue);
 
-    await logEvent('market_buy', `Buyer ${buyerId} bought ${listingId}`, { userId: buyerId, metadata: { listingId, price: listingData.price } });
+    await logEvent('transaction', `Buyer ${buyerId} bought ${listingId}`, { userId: buyerId, metadata: { listingId, price: listingData.price } });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

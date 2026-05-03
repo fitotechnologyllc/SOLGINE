@@ -12,7 +12,7 @@ export const checkRateLimit = async (userId: string, action: string, limit: numb
   const limitRef = adminDb.collection('rateLimits').doc(`${routeKey}_${userId}`);
 
   try {
-    const result = await adminDb.runTransaction(async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction: any) => {
       const limitDoc = await transaction.get(limitRef);
       const now = Date.now();
 

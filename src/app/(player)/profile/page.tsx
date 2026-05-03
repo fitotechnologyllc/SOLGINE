@@ -12,6 +12,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getCurrentLevelProgress } from "@/lib/rewards";
 import { Trophy, Swords, Activity, Target } from "lucide-react";
+import { toast } from 'react-hot-toast';
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
@@ -79,8 +80,13 @@ export default function ProfilePage() {
             
             <div className="space-y-4">
                <InfoRow label="Email Address" value={user.email || 'No email set'} />
-               <InfoRow label="Member Since" value={new Date(user.createdAt?.seconds * 1000).toLocaleDateString()} />
-               <InfoRow label="Protocol Role" value={user.role.toUpperCase()} />
+               <InfoRow 
+                 label="Member Since" 
+                 value={user.createdAt?.seconds 
+                   ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() 
+                   : 'RECENT'} 
+               />
+               <InfoRow label="Protocol Role" value={(user.role || 'player').toUpperCase()} />
             </div>
 
             <div className="pt-6 border-t border-white/5">

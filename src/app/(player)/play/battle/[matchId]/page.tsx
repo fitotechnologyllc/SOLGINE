@@ -122,7 +122,7 @@ export default function BattleRoomPage() {
             <div className="h-8 w-px bg-white/10 mx-2"></div>
             <div>
                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Match ID</p>
-               <p className="text-xs font-mono text-zinc-400">{matchId.toString().slice(-8).toUpperCase()}</p>
+               <p className="text-xs font-mono text-zinc-400">{matchId?.toString().slice(-8).toUpperCase() || 'UNKNOWN'}</p>
             </div>
          </div>
 

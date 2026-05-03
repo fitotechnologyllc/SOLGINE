@@ -29,6 +29,8 @@ import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { getCardImage } from '@/lib/card-media';
+import { CardArt } from '@/components/cards/CardArt';
 
 interface Card {
   id: string;
@@ -336,7 +338,7 @@ function DeckForgeContent() {
                        const card = ownedCards.find(c => c.id === id);
                        return (
                          <div key={i} className="w-12 h-16 rounded-lg bg-zinc-800 border-2 border-background overflow-hidden relative shadow-lg">
-                            {card?.imageUrl && <img src={card.imageUrl} className="w-full h-full object-cover" />}
+                            <CardArt card={card} className="w-full h-full" />
                          </div>
                        );
                      })}
@@ -480,7 +482,7 @@ function DeckForgeContent() {
                          )}
                        >
                           <div className="w-full aspect-square rounded-xl bg-zinc-900 mb-2 overflow-hidden relative">
-                             {card.imageUrl && <img src={card.imageUrl} className="w-full h-full object-cover" />}
+                             <CardArt card={card} className="w-full h-full" />
                              <div className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-full bg-black/60 text-[8px] font-black text-white border border-white/10">
                                 x{available}
                              </div>
@@ -538,7 +540,7 @@ function DeckForgeContent() {
                         className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 group hover:border-white/20 transition-all"
                       >
                          <div className="w-12 h-12 rounded-lg bg-zinc-900 border border-white/10 shrink-0 overflow-hidden">
-                            {card?.imageUrl && <img src={card.imageUrl} className="w-full h-full object-cover" />}
+                            <CardArt card={card} className="w-full h-full" />
                          </div>
                          <div className="flex-1 min-w-0">
                             <h4 className="text-[11px] font-black font-space text-white truncate">{card?.name}</h4>

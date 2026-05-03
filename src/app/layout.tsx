@@ -22,6 +22,10 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "SOLGINE | The Solana Engine for Digital Game Economies",
   description: "Collect, trade, sell, and play digital card games. Powered by Fito Technology, LLC.",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.svg",
+  },
 };
 
 export default function RootLayout({

@@ -157,10 +157,10 @@ export async function updateCardValueIndex(cardId: string) {
     .get();
 
   const recentSales24h = recentSalesSnap.size;
-  const volume24h = recentSalesSnap.docs.reduce((sum, doc) => sum + (doc.data().price || 0), 0);
+  const volume24h = recentSalesSnap.docs.reduce((sum: number, doc: any) => sum + (doc.data().price || 0), 0);
   
   // Count unique buyers for anti-manipulation demand score
-  const uniqueBuyers = new Set(recentSalesSnap.docs.map(doc => doc.data().buyerUid)).size;
+  const uniqueBuyers = new Set(recentSalesSnap.docs.map((doc: any) => doc.data().buyerUid)).size;
 
   // Get price from 24h ago for priceChange
   const sales24hAgoSnap = await adminDb.collection('transactions')

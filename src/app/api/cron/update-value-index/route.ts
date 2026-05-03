@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     if (!adminDb) return NextResponse.json({ error: 'No DB' }, { status: 500 });
 
     const cardsSnap = await adminDb.collection('cards').get();
-    const cardIds = cardsSnap.docs.map(doc => doc.id);
+    const cardIds = cardsSnap.docs.map((doc: any) => doc.id);
 
     console.log(`Running Value Index update for ${cardIds.length} cards...`);
 

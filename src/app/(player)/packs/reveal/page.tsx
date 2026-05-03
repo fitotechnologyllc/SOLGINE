@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Sparkles, ChevronRight, RefreshCw, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { getCardImage } from '@/lib/card-media';
+import { CardArt } from '@/components/cards/CardArt';
 
 interface Card {
   id: string;
@@ -233,11 +235,7 @@ export default function PackRevealPage() {
                            
                            {/* Card image/art area */}
                            <div className="flex-1 bg-black/60 rounded-xl border border-white/10 flex items-center justify-center mb-4 overflow-hidden relative shadow-inner">
-                              {card.imageUrl ? (
-                                <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <Sparkles size={48} className={cn(getRarityText(card.rarity), "drop-shadow-lg")} />
-                              )}
+                              <CardArt card={card} className="w-full h-full" />
                               
                               {/* Rarity specific effects */}
                               {card.rarity === 'mythic' && (
@@ -331,11 +329,7 @@ export default function PackRevealPage() {
                           "w-12 h-12 rounded-lg flex items-center justify-center border",
                           isRare ? getRarityGlow(card.rarity) : "bg-zinc-900 border-zinc-800"
                         )}>
-                          {card.imageUrl ? (
-                            <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover rounded-lg" />
-                          ) : (
-                            <Sparkles size={20} className={getRarityText(card.rarity)} />
-                          )}
+                          <CardArt card={card} className="w-full h-full rounded-lg" />
                         </div>
                         <div>
                           <h4 className="text-white font-bold font-space">{card.name}</h4>

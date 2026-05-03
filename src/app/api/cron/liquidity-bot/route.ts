@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 
     // 1. Fetch all cards in the Value Index
     const cardsSnap = await adminDb.collection('cardValueIndex').get();
-    const cards = cardsSnap.docs.map(doc => doc.data() as CardValueIndex);
+    const cards = cardsSnap.docs.map((doc: any) => doc.data() as CardValueIndex);
 
     for (const card of cards) {
       // Limit bot activity per run to avoid batch overflow

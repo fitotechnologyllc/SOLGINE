@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     
     return NextResponse.json({ 
       success: true, 
-      trendingCards: indexSnap.docs.map(doc => ({ id: doc.id, score: doc.data().trendingScore })) 
+      trendingCards: indexSnap.docs.map((doc: any) => ({ id: doc.id, score: doc.data().trendingScore })) 
     });
   } catch (error: any) {
     console.error('Trending cron error:', error);

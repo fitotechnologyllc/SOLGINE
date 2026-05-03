@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     if (!packId) throw new Error("INVALID_REQUEST: Pack ID required.");
 
     // 3. TRANSACTIONAL EXECUTION
-    const result = await adminDb.runTransaction(async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction: any) => {
       // 3.1 Verify System Status for this Project
       const statusRef = adminDb.collection('systemStatus').doc(projectId);
       const statusSnap = await transaction.get(statusRef);
@@ -106,8 +106,8 @@ export async function POST(req: Request) {
           
         const cardsSnap = await transaction.get(cardsQuery);
         let eligibleCards = cardsSnap.docs
-          .map(d => ({ id: d.id, ...d.data() } as any))
-          .filter(c => !c.supplyLimit || c.mintedCount < c.supplyLimit);
+          .map((d: any) => ({ id: d.id, ...d.data() } as any))
+          .filter((c: any) => !c.supplyLimit || c.mintedCount < c.supplyLimit);
 
         // Fallback Rarity if sold out
         if (eligibleCards.length === 0) {
@@ -122,8 +122,8 @@ export async function POST(req: Request) {
               .limit(20);
             const fbSnap = await transaction.get(fbQuery);
             eligibleCards = fbSnap.docs
-              .map(d => ({ id: d.id, ...d.data() } as any))
-              .filter(c => !c.supplyLimit || c.mintedCount < c.supplyLimit);
+              .map((d: any) => ({ id: d.id, ...d.data() } as any))
+              .filter((c: any) => !c.supplyLimit || c.mintedCount < c.supplyLimit);
           }
         }
 
@@ -190,7 +190,7 @@ export async function POST(req: Request) {
         userId,
         projectId,
         packId,
-        cardsPulled: pulledCards.map(c => c.id),
+        cardsPulled: pulledCards.map((c: any) => c.id),
         pricePaid: finalPrice,
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });

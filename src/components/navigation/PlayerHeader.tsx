@@ -6,10 +6,16 @@ import { Search, User, Zap, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useState, useEffect } from 'react';
 
 export function PlayerHeader() {
   const { user } = useAuth();
   const { connected } = useWallet();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 h-20 border-b border-white/5 bg-background/80 backdrop-blur-xl z-40 px-6">
@@ -33,7 +39,9 @@ export function PlayerHeader() {
         <div className="flex items-center gap-4">
           {/* Wallet Status */}
           <div className="hidden sm:block">
-            <WalletMultiButton className="!bg-white/5 !border !border-white/10 !rounded-xl !h-10 !text-xs !font-black !font-space !uppercase !tracking-widest hover:!bg-white/10 transition-all" />
+            {mounted && (
+              <WalletMultiButton className="!bg-white/5 !border !border-white/10 !rounded-xl !h-10 !text-xs !font-black !font-space !uppercase !tracking-widest hover:!bg-white/10 transition-all" />
+            )}
           </div>
 
           <div className="w-px h-6 bg-white/10 hidden sm:block" />

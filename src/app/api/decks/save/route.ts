@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     }
 
     // 2. TRANSACTIONAL EXECUTION
-    const result = await adminDb.runTransaction(async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction: any) => {
       // 2.1 Validate Ownership (Inside Transaction)
       const playerCollRef = adminDb.collection('playerCollections').doc(userId);
       const playerCollSnap = await transaction.get(playerCollRef);
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
           .where('userId', '==', userId)
           .where('isActive', '==', true);
         const activeDecksSnap = await transaction.get(activeDecksQuery);
-        activeDecksSnap.forEach(doc => {
+        activeDecksSnap.forEach((doc: any) => {
           if (doc.id !== deckId) {
             transaction.update(doc.ref, { isActive: false, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
           }
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
       return { success: true, deckId: finalDeckId, powerScore };
     });
 
-    await logEvent('deck_save', `User ${userId} saved deck ${result.deckId}`, { userId });
+    await logEvent('api_success', `User ${userId} saved deck ${result.deckId}`, { userId });
     return NextResponse.json(result);
 
   } catch (error: any) {

@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     userId = decodedToken.uid;
 
     // 2. TRANSACTIONAL EXECUTION
-    const result = await adminDb.runTransaction(async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction: any) => {
       const userRef = adminDb.collection('users').doc(userId);
       const userSnap = await transaction.get(userRef);
 
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       };
     });
 
-    await logEvent('reward_claim', `User ${userId} claimed daily reward`, { userId });
+    await logEvent('api_success', `User ${userId} claimed daily reward`, { userId });
     return NextResponse.json(result);
 
   } catch (error: any) {

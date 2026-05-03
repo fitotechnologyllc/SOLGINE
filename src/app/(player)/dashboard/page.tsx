@@ -80,7 +80,7 @@ export default function Dashboard() {
           ...doc.data()
         }));
 
-        const combined = [...battleData, ...txData].sort((a, b) => 
+        const combined = [...battleData, ...txData].sort((a: any, b: any) => 
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         ).slice(0, 5);
 
@@ -136,7 +136,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 pt-6 pb-[120px] min-h-screen space-y-8">
+    <div className="max-w-[1200px] mx-auto px-4 md:px-6 pt-6 pb-[120px] min-h-screen space-y-8">
       
       {/* Hero Experience Section */}
       <motion.div 
@@ -269,7 +269,7 @@ export default function Dashboard() {
             </button>
          </div>
 
-         <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide -mx-6 px-6">
+          <div className="flex overflow-x-auto overflow-y-hidden gap-5 snap-x snap-mandatory scroll-smooth touch-pan-x overscroll-x-contain scrollbar-hide -mx-4 md:-mx-6 px-4 md:px-6 pb-8" style={{ WebkitOverflowScrolling: 'touch' }}>
             <SolgineCard 
               cardId="001"
               name="NEURAL KNIGHT"
@@ -279,6 +279,7 @@ export default function Dashboard() {
               artworkUrl="/images/cyber-knight.png"
               stats={{ atk: 85, def: 60, spd: 45, util: 30 }}
               description="A relic from the first digital wars, still pulsing with ancient resonance."
+              className="flex-shrink-0 snap-start !w-[82vw] md:!w-[320px] !max-w-[420px] min-w-[280px]"
             />
             <SolgineCard 
               cardId="002"
@@ -289,6 +290,7 @@ export default function Dashboard() {
               artworkUrl="/images/void-dragon.png"
               stats={{ atk: 95, def: 80, spd: 70, util: 90 }}
               description="The void doesn't just consume; it remembers everything it has ever eaten."
+              className="flex-shrink-0 snap-start !w-[82vw] md:!w-[320px] !max-w-[420px] min-w-[280px]"
             />
             <SolgineCard 
               cardId="003"
@@ -297,8 +299,9 @@ export default function Dashboard() {
               rarity="Rare"
               finish="Glitch"
               artworkUrl="/images/glitch-mage.png"
-              stats={{ atk: 40, def: 30, spd: 90, util: 85 }}
-              description="Her spells are errors in the simulation that she has learned to replicate."
+              stats={{ atk: 65, def: 40, spd: 85, util: 95 }}
+              description="Reality is just a suggestion. I prefer to edit the source code directly."
+              className="flex-shrink-0 snap-start !w-[82vw] md:!w-[320px] !max-w-[420px] min-w-[280px]"
             />
             <SolgineCard 
               cardId="004"
@@ -309,6 +312,7 @@ export default function Dashboard() {
               artworkUrl="/images/cyber-knight.png"
               stats={{ atk: 30, def: 95, spd: 20, util: 50 }}
               description="Unmovable, unyielding, and completely detached from the physical world."
+              className="flex-shrink-0 snap-start !w-[82vw] md:!w-[320px] !max-w-[420px] min-w-[280px]"
             />
          </div>
       </div>

@@ -12,6 +12,9 @@ import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { ValueIndexPanel } from '@/components/ui/ValueIndexPanel';
+import { getCardEstimatedValue } from '@/lib/card-utils';
+import { CardArt } from '@/components/cards/CardArt';
+import { hydrateOwnedCards } from '@/lib/card-media';
 
 export default function CollectionPage() {
   const router = useRouter();
@@ -41,15 +44,7 @@ export default function CollectionPage() {
         const collData = collSnap.data();
         const cardsData = collData.cards || [];
         
-        const cardPromises = cardsData.map(async (c: any) => {
-          if (c.count <= 0) return null;
-          const cardDoc = await getDoc(doc(db, 'cards', c.cardId));
-          if (!cardDoc.exists()) return null;
-          return { ...cardDoc.data(), count: c.count, listedCount: c.listedCount || 0, mintedCount: c.mintedCount || 0, id: c.cardId };
-        });
-        
-        fullCards = (await Promise.all(cardPromises)).filter(Boolean);
-        setCards(fullCards);
+        setCards(await hydrateOwnedCards(cardsData));
         
         // Fetch value indices
         const indicesPromises = fullCards.map(async (c) => {
@@ -100,7 +95,7 @@ export default function CollectionPage() {
       total += c.count;
       
       const v = valueIndices[c.id];
-      const estValue = v?.averageSale || v?.estimatedValueLow || c.estimatedValue || 0;
+      const estValue = getCardEstimatedValue(c, v);
       value += estValue * c.count;
 
       const rIdx = rarityOrder.indexOf((c.rarity || '').toLowerCase());
@@ -316,7 +311,7 @@ export default function CollectionPage() {
             >
                <div className="w-full h-full rounded-[1.4rem] bg-[#0d0d0d] p-3 flex flex-col">
                   <div className="w-full aspect-square rounded-xl bg-zinc-900 overflow-hidden relative mb-3">
-                     {card.imageUrl && <img src={card.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
+                      <CardArt card={card} className="w-full h-full" />
                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/60 text-[8px] font-black text-white border border-white/10">
                         x{card.count}
                      </div>
@@ -361,19 +356,13 @@ export default function CollectionPage() {
             </button>
             
             <div className="md:w-2/5 p-6 md:p-8 bg-zinc-900/50 flex flex-col items-center justify-center border-r border-white/5">
-               <div className={cn(
-                 "w-full aspect-[3/4] max-w-sm rounded-2xl overflow-hidden relative shadow-2xl",
-                 selectedCard.rarity?.toLowerCase() === 'legendary' ? "border-2 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.3)]" : 
-                 selectedCard.rarity?.toLowerCase() === 'mythic' ? "border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]" : "border border-white/10"
-               )}>
-                 {selectedCard.imageUrl ? (
-                   <img src={selectedCard.imageUrl} alt={selectedCard.name} className="w-full h-full object-cover" />
-                 ) : (
-                   <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
-                     <Library size={48} className="text-zinc-700" />
-                   </div>
-                 )}
-               </div>
+                 <div className={cn(
+                   "w-full aspect-[3/4] max-w-sm rounded-2xl overflow-hidden relative shadow-2xl",
+                   selectedCard.rarity?.toLowerCase() === 'legendary' ? "border-2 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.3)]" : 
+                   selectedCard.rarity?.toLowerCase() === 'mythic' ? "border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]" : "border border-white/10"
+                 )}>
+                   <CardArt card={selectedCard} className="w-full h-full" showRarityLabel />
+                 </div>
                <div className="mt-6 flex justify-center gap-4 w-full">
                  <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-xl border border-white/5">
                     <Sword size={16} className="text-zinc-500" />

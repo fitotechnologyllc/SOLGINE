@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       .where('isActive', '==', true)
       .get();
     
-    activeDecks.forEach(doc => {
+    activeDecks.forEach((doc: any) => {
       batch.update(doc.ref, { isActive: false, updatedAt: new Date().toISOString() });
     });
 

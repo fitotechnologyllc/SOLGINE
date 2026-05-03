@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     // 2. TRANSACTIONAL EXECUTION
-    const result = await adminDb.runTransaction(async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction: any) => {
       const userRef = adminDb.collection('users').doc(userId);
       const collRef = adminDb.collection('playerCollections').doc(userId);
       const cardDocRef = adminDb.collection('cards').doc(cardId);
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
       return { success: true, listingId: listingRef.id };
     });
 
-    await logEvent('market_list', `User ${userId} listed ${cardId} for ${price}`, { userId, metadata: { cardId, price } });
+    await logEvent('transaction', `User ${userId} listed ${cardId} for ${price}`, { userId, metadata: { cardId, price } });
     return NextResponse.json(result);
 
   } catch (error: any) {

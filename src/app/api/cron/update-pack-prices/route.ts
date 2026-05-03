@@ -11,11 +11,11 @@ export async function GET(req: Request) {
     if (!adminDb) return NextResponse.json({ error: 'No DB' }, { status: 500 });
 
     const packsSnap = await adminDb.collection('boosterPacks').get();
-    const packs = packsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const packs = packsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
 
     const batch = adminDb.batch();
 
-    for (const pack: any of packs) {
+    for (const pack of packs) {
       // Calculate average value of cards in each pack
       const rarityOdds = pack.rarityOdds || {};
       let totalValue = 0;
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
           .get();
         
         if (!cardsSnap.empty) {
-          const avgRarityValue = cardsSnap.docs.reduce((sum, doc) => sum + (doc.data().estimatedValue || 0), 0) / cardsSnap.size;
+          const avgRarityValue = cardsSnap.docs.reduce((sum: number, doc: any) => sum + (doc.data().estimatedValue || 0), 0) / cardsSnap.size;
           totalValue += (avgRarityValue * (chance as number / 100));
         }
       }

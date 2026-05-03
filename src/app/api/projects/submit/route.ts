@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     
     // 1. Check Cards
     const cardsSnap = await adminDb.collection('cards').where('projectId', '==', projectId).get();
-    const cards = cardsSnap.docs.map(doc => doc.data());
+    const cards = cardsSnap.docs.map((doc: any) => doc.data());
 
     if (cards.length < 10) {
       return NextResponse.json({ error: 'Project must have at least 10 cards.' }, { status: 400 });
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 
     // 2. Check Booster Packs
     const packsSnap = await adminDb.collection('boosterPacks').where('projectId', '==', projectId).get();
-    const packs = packsSnap.docs.map(doc => doc.data());
+    const packs = packsSnap.docs.map((doc: any) => doc.data());
 
     if (packs.length < 1) {
       return NextResponse.json({ error: 'Project must have at least 1 booster pack.' }, { status: 400 });
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
 
     for (const pack of packs) {
       const odds = pack.rarityOdds || {};
-      const totalOdds = Object.values(odds).reduce((sum: any, val: any) => sum + val, 0);
+      const totalOdds = Object.values(odds).reduce((sum: number, val: any) => sum + (val as number), 0);
       if (Math.abs(totalOdds - 100) > 0.01) {
         return NextResponse.json({ error: `Pack "${pack.name}" odds must total 100% (current: ${totalOdds}%).` }, { status: 400 });
       }
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
       cardCount: cards.length,
       packCount: packs.length,
       sampleCards: cards.slice(0, 5),
-      packSummary: packs.map(p => ({ name: p.name, price: p.price, odds: p.rarityOdds })),
+      packSummary: packs.map((p: any) => ({ name: p.name, price: p.price, odds: p.rarityOdds })),
       submittedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 

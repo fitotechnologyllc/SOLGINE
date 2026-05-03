@@ -42,7 +42,6 @@ export async function mintCardNFT(metadata: {
 }) {
   const umi = getUmi();
   const mint = generateSigner(umi);
-
   const result = await createNft(umi, {
     mint,
     name: metadata.name,
@@ -51,10 +50,7 @@ export async function mintCardNFT(metadata: {
     sellerFeeBasisPoints: percentAmount(5),
     tokenStandard: TokenStandard.NonFungible,
     isMutable: true,
-    // We mint it to the admin first, or directly to the user if we have a way.
-    // For simplicity, let's mint to the user provided.
-    // Metaplex createNft defaults to current identity, but we can transfer or use a specific owner.
-  }).sendAndConfirm(umi);
+  } as any).sendAndConfirm(umi);
 
   return {
     mintAddress: mint.publicKey,

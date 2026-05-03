@@ -14,7 +14,8 @@ import {
   User as UserIcon,
   Calendar,
   Layers,
-  Package
+  Package,
+  ChevronRight
 } from "lucide-react";
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';

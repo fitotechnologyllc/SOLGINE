@@ -144,3 +144,14 @@ h1, h2, h3, h4, .font-space {
 ::-webkit-scrollbar-thumb:hover {
   background: #444;
 }
+
+/* Scrollbar Hide Utility */
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
