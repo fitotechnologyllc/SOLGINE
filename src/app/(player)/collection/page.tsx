@@ -36,6 +36,7 @@ export default function CollectionPage() {
   const [mintResult, setMintResult] = useState<any | null>(null);
 
   const { user } = useAuth();
+  const { publicKey, signMessage } = useWallet();
 
   const fetchCollection = async () => {
     if (!user) return;
@@ -267,7 +268,6 @@ export default function CollectionPage() {
     }
   };
 
-  const { publicKey, signMessage } = useWallet();
 
   const handleMintToSolana = async () => {
     if (!selectedCard) return;
