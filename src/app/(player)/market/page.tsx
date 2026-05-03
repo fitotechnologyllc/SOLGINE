@@ -139,6 +139,34 @@ export default function MarketPage() {
   const rarities = ['All', 'Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic'];
   const sorts = ['Newest', 'Lowest Price', 'Highest Price', 'Highest Rarity'];
 
+  const getListingBadge = (item: any) => {
+    const index = valueIndices[item.cardId];
+    if (!index) return null;
+
+    const sales24h = index.sales24h || 0;
+    const lastSale = index.lastSale || 0;
+    const avgSale = index.averageSale || 0;
+    const activeListings = index.activeListings || 0;
+    const floorPrice = index.floorPrice || 0;
+    
+    if (item.price < floorPrice || (avgSale > 0 && item.price < avgSale * 0.9)) {
+      return { text: '📉 Undervalued', color: 'bg-secondary text-black' };
+    }
+    if (sales24h > 10) {
+      return { text: '⚡ Hot Sale', color: 'bg-orange-500 text-white shadow-[0_0_10px_rgba(249,115,22,0.4)]' };
+    }
+    if (sales24h > 5 && lastSale > avgSale) {
+      return { text: '🔥 Trending', color: 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)]' };
+    }
+    if (lastSale > avgSale * 1.05) {
+      return { text: '📈 Rising', color: 'bg-blue-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.4)]' };
+    }
+    if (activeListings > 0 && activeListings < 5) {
+      return { text: '💎 Rare', color: 'bg-primary text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]' };
+    }
+    return null;
+  };
+
   const stats = useMemo(() => {
     let volume = 0;
     let minPrice = Infinity;
@@ -311,6 +339,15 @@ export default function MarketPage() {
                       }}
                     />
                   </div>
+                  
+                  {getListingBadge(item) && (
+                    <div className={cn(
+                      "absolute top-2 left-2 z-10 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1",
+                      getListingBadge(item)?.color
+                    )}>
+                      {getListingBadge(item)?.text}
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                   
                   {view === 'grid' && (

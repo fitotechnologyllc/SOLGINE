@@ -1,18 +1,119 @@
-rules_version='2'
-
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 5, 29);
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isAdmin() {
+      let data = getUserData();
+      return isAuthenticated() && (data.role == 'admin' || data.role == 'owner');
+    }
+    
+    function isPlatformOwner() {
+      let data = getUserData();
+      return isAuthenticated() && data.role == 'owner';
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isPlatformOwner();
+    }
+    
+    // Player collections & stats
+    match /playerCollections/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isPlatformOwner();
+    }
+    
+    match /playerStats/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isPlatformOwner();
+    }
+    
+    // Game Content
+    match /cards/{cardId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /packs/{packId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /cardValueIndex/{cardId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Projects
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      // Project Treasury (Nested)
+      match /treasury/{docId} {
+        allow read, write: if isPlatformOwner();
+      }
+    }
+    
+    // Marketplace
+    match /marketListings/{listingId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.sellerUid == request.auth.uid || isAdmin());
+    }
+    
+    // Transactions (Historical record, read-only for users)
+    match /transactions/{txId} {
+      allow read: if isAuthenticated() && (resource.data.buyerUid == request.auth.uid || resource.data.sellerUid == request.auth.uid || isAdmin());
+      allow write: if false; // Only server-side
+    }
+    
+    // Treasury (Global)
+    match /treasury/{docId} {
+      allow read, write: if isPlatformOwner();
+    }
+    
+    match /treasuryEvents/{eventId} {
+      allow read: if isPlatformOwner();
+      allow write: if false; // Only server-side
+    }
+    
+    // System Status
+    match /systemStatus/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Market Flags
+    match /marketFlags/{flagId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Missions & Battles
+    match /missions/{missionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /battles/{battleId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false; // Only server-side
     }
   }
 }

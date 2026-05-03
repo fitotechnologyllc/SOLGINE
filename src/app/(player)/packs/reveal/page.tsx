@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Sparkles, ChevronRight, RefreshCw, Layers } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { Package, Sparkles, ChevronRight, RefreshCw, Layers, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { getCardImage } from '@/lib/card-media';
@@ -79,13 +80,30 @@ export default function PackRevealPage() {
 
     const nextCard = cards[revealedCount];
     const isHighRarity = ['epic', 'legendary', 'mythic'].includes(nextCard.rarity);
+    const isRare = nextCard.rarity === 'rare';
 
     if (isHighRarity) {
+      setIsShaking(true);
+      // Extra long suspense for high rarity
+      setTimeout(() => {
+        setIsShaking(false);
+        setRevealedCount(prev => prev + 1);
+        
+        // Micro-win toast for high rarity
+        toast.success(
+          <div className="flex flex-col gap-1">
+            <span className="font-black text-xs uppercase tracking-widest text-amber-500">LEGENDARY PROTOCOL</span>
+            <span className="text-sm font-medium">You just pulled {nextCard.name}!</span>
+          </div>,
+          { icon: '🔥', duration: 4000 }
+        );
+      }, 1500); 
+    } else if (isRare) {
       setIsShaking(true);
       setTimeout(() => {
         setIsShaking(false);
         setRevealedCount(prev => prev + 1);
-      }, 800);
+      }, 600);
     } else {
       setRevealedCount(prev => prev + 1);
     }
@@ -238,6 +256,15 @@ export default function PackRevealPage() {
                               <CardArt card={card} className="w-full h-full" />
                               
                               {/* Rarity specific effects */}
+                              {['rare', 'epic', 'legendary', 'mythic'].includes(card.rarity) && (
+                                <div className={cn(
+                                  "absolute inset-0 opacity-40 mix-blend-overlay animate-glow-pulse",
+                                  card.rarity === 'mythic' ? "bg-red-500" :
+                                  card.rarity === 'legendary' ? "bg-amber-400" :
+                                  card.rarity === 'epic' ? "bg-purple-500" : "bg-blue-500"
+                                )}></div>
+                              )}
+                              
                               {card.rarity === 'mythic' && (
                                 <div className="absolute inset-0 bg-gradient-to-t from-red-500/30 to-transparent mix-blend-overlay animate-pulse"></div>
                               )}
@@ -349,6 +376,14 @@ export default function PackRevealPage() {
                   );
                 })}
               </div>
+              
+              {/* Return Hook */}
+              <div className="bg-secondary/10 p-4 border-t border-white/10 flex items-center justify-center gap-3">
+                 <Zap size={14} className="text-secondary animate-pulse" />
+                 <p className="text-[10px] font-black text-white uppercase tracking-widest">
+                   Next Daily Reward waiting — Return tomorrow to keep your streak alive!
+                 </p>
+              </div>
             </div>
 
             <div className="flex flex-wrap justify-center gap-4 w-full">
@@ -384,6 +419,14 @@ export default function PackRevealPage() {
         .perspective-1000 { perspective: 1000px; }
         .preserve-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
+        
+        @keyframes glow-pulse {
+          0%, 100% { opacity: 0.2; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.05); }
+        }
+        .animate-glow-pulse {
+          animation: glow-pulse 2s infinite ease-in-out;
+        }
       `}</style>
     </div>
   );

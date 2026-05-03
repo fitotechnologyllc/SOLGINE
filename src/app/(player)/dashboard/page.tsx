@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Package, Trophy, Swords, ShoppingCart, Zap, Sparkles, Activity, CreditCard, ChevronRight, ArrowRight, Play, Star } from "lucide-react";
+import { Package, Trophy, Swords, ShoppingCart, Zap, Sparkles, Activity, CreditCard, ChevronRight, ArrowRight, Play, Star, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -109,7 +109,19 @@ export default function Dashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       
-      toast.success("Daily Reward Claimed! +25 XP and Starter Pack Credit.");
+      const xpMsg = data.xpGain ? `+${data.xpGain} XP` : '';
+      const rewardsMsg = Object.entries(data.rewards || {})
+        .filter(([_, v]) => (v as number) > 0)
+        .map(([k, v]) => `+${v} ${k.replace('Credits', ' Pack')}`)
+        .join(', ');
+
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <span className="font-black text-xs uppercase tracking-widest text-secondary">Reward Protocol Initialized</span>
+          <span className="text-sm font-medium">{xpMsg} {rewardsMsg ? `& ${rewardsMsg}` : ''}</span>
+          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">🔥 {data.streak} Day Streak Active</span>
+        </div>
+      );
       // Refresh user data
       const userRef = doc(db, 'users', user!.uid);
       const userSnap = await getDoc(userRef);
@@ -138,6 +150,81 @@ export default function Dashboard() {
   return (
     <div className="max-w-[1200px] mx-auto px-4 md:px-6 pt-6 pb-[120px] min-h-screen space-y-8">
       
+      {/* Daily Resonance Claim & Streak System */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 glass-card p-6 md:p-8 rounded-[2.5rem] border-secondary/20 bg-secondary/5 relative overflow-hidden group">
+           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="space-y-4 text-center md:text-left">
+                 <div className="flex items-center justify-center md:justify-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary">
+                       <Zap size={20} className="animate-pulse" />
+                    </div>
+                    <div>
+                       <h3 className="text-lg font-black font-space text-white uppercase leading-none">Daily Resonance Claim</h3>
+                       <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Initialize your protocol to receive daily assets</p>
+                    </div>
+                 </div>
+
+                 {/* Reward Ladder Visualization */}
+                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                    {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+                       const isCurrent = (userData?.dailyStreak || 0) + 1 === day || ((userData?.dailyStreak || 0) === 7 && day === 1);
+                       const isPast = (userData?.dailyStreak || 0) >= day;
+                       return (
+                          <div key={day} className={cn(
+                             "w-12 h-16 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all",
+                             isCurrent ? "bg-secondary/20 border-secondary/40 scale-110 shadow-[0_0_20px_rgba(20,241,149,0.2)]" : 
+                             isPast ? "bg-secondary/5 border-secondary/10 opacity-50" : "bg-white/5 border-white/5"
+                          )}>
+                             <span className="text-[8px] font-black text-zinc-500 uppercase">Day {day}</span>
+                             {day === 7 ? <Star size={14} className={isCurrent || isPast ? "text-amber-400" : "text-zinc-600"} /> : <Package size={14} className={isCurrent || isPast ? "text-secondary" : "text-zinc-600"} />}
+                             {isCurrent && <div className="absolute -top-1 right-1 w-1.5 h-1.5 rounded-full bg-secondary animate-ping" />}
+                          </div>
+                       );
+                    })}
+                 </div>
+              </div>
+
+              <div className="flex flex-col items-center md:items-end gap-3">
+                 <button 
+                   onClick={claimDaily}
+                   disabled={claiming}
+                   className="px-10 py-5 bg-secondary text-black font-black font-space text-xs tracking-[0.2em] uppercase rounded-2xl shadow-[0_0_30px_rgba(20,241,149,0.3)] hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
+                 >
+                    {claiming ? "Processing..." : "Claim Daily Reward"}
+                 </button>
+                 <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Resets in: 24:00:00</p>
+              </div>
+           </div>
+           
+           {/* Background decorative elements */}
+           <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/10 blur-[80px] -z-0 rounded-full" />
+           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/5 blur-[60px] -z-0 rounded-full" />
+        </div>
+
+        <div className="glass-card p-8 rounded-[2.5rem] border-white/5 bg-white/5 flex flex-col items-center justify-center text-center space-y-4">
+           <div className="relative">
+              <Flame size={48} className={cn("transition-all duration-700", (userData?.dailyStreak || 0) > 0 ? "text-orange-500 scale-110 drop-shadow-[0_0_15px_rgba(249,115,22,0.5)]" : "text-zinc-800")} />
+              {(userData?.dailyStreak || 0) > 0 && <div className="absolute inset-0 bg-orange-500/20 blur-xl rounded-full animate-pulse" />}
+           </div>
+           <div>
+              <h3 className="text-2xl font-black font-space text-white uppercase tracking-tighter">
+                {userData?.dailyStreak || 0} Day Streak
+              </h3>
+              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-1">
+                {7 - ((userData?.dailyStreak || 0) % 7)} Days until Premium Reward
+              </p>
+           </div>
+           <div className="w-full h-1 bg-black/40 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${((userData?.dailyStreak || 0) % 7) / 7 * 100}%` }}
+                className="h-full bg-gradient-to-r from-orange-500 to-amber-500"
+              />
+           </div>
+        </div>
+      </div>
+
       {/* Hero Experience Section */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}

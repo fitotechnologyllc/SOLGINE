@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from "next/navigation";
+
 import { useAuth } from "@/components/providers/AuthProvider";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
@@ -11,11 +13,12 @@ import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getCurrentLevelProgress } from "@/lib/rewards";
-import { Trophy, Swords, Activity, Target } from "lucide-react";
+import { Trophy, Swords, Activity, Target, ShieldCheck, PieChart, Database } from "lucide-react";
 import { toast } from 'react-hot-toast';
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const { connected, publicKey } = useWallet();
   const [userData, setUserData] = useState<any>(null);
   const [playerStats, setPlayerStats] = useState<any>(null);
@@ -287,6 +290,63 @@ export default function ProfilePage() {
             </div>
          </div>
       </div>
+
+      {/* EXECUTIVE CONTROL CENTER - ONLY FOR OWNER/ADMIN */}
+      {user && (user.role === 'owner' || user.role === 'admin') && (
+        <div className="glass-card p-10 border-primary/20 bg-primary/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] -mr-32 -mt-32 rounded-full" />
+          <div className="relative z-10 space-y-8">
+            <div>
+              <p className="text-primary font-black font-space text-[10px] uppercase tracking-[0.3em] mb-2">Internal Protocol</p>
+              <h3 className="text-3xl font-black font-space text-white uppercase tracking-tighter">EXECUTIVE_COMMAND</h3>
+              <p className="text-zinc-500 text-sm mt-2 max-w-md">Access restricted platform management and revenue oversight systems.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {user.role === 'owner' && (
+                <button 
+                  onClick={() => router.push('/admin/revenue')}
+                  className="p-6 rounded-2xl bg-black/40 border border-primary/30 hover:border-primary transition-all flex flex-col items-center gap-4 group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                    <PieChart size={24} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-black text-white uppercase font-space">Revenue Center</p>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Owner Only</p>
+                  </div>
+                </button>
+              )}
+              
+              <button 
+                onClick={() => router.push('/admin/economy')}
+                className="p-6 rounded-2xl bg-black/40 border border-white/10 hover:border-white/30 transition-all flex flex-col items-center gap-4 group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                  <Database size={24} />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-black text-white uppercase font-space">Economy Monitor</p>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Admin Access</p>
+                </div>
+              </button>
+
+              <button 
+                onClick={() => router.push('/admin/projects')}
+                className="p-6 rounded-2xl bg-black/40 border border-white/10 hover:border-white/30 transition-all flex flex-col items-center gap-4 group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                  <ShieldCheck size={24} />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-black text-white uppercase font-space">Project Control</p>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Admin Access</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="glass-card p-8">
          <h3 className="text-lg font-black font-space text-white mb-6 uppercase tracking-wider">Interface Settings</h3>
