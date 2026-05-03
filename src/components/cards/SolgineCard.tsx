@@ -96,13 +96,19 @@ export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
       whileTap={{ scale: 0.96 }}
       onClick={onClick}
       className={cn(
-        "relative group aspect-[3/4.5] w-full max-w-[320px] rounded-[2rem] overflow-hidden cursor-pointer transition-all duration-500 shadow-2xl",
-        normalizedRarity === 'Mythic' ? style.border : cn("border bg-gradient-to-b p-2", style.border, style.bg),
+        "relative group aspect-[3/4.5] w-full max-w-[320px] rounded-[2rem] cursor-pointer transition-all duration-500 shadow-2xl",
+        normalizedRarity === 'Mythic' ? style.border : cn("border bg-gradient-to-b p-2 pt-3", style.border, style.bg),
         style.glow,
         "hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]",
         className
       )}
     >
+      {/* Top Initials Badge (PR / VW / CD) */}
+      <div className="absolute top-3 left-3 z-20 flex items-center justify-center w-8 h-8 rounded-xl bg-black/60 backdrop-blur-xl border border-white/20 shadow-lg transform group-hover:scale-110 transition-transform duration-500">
+        <span className={cn("text-[10px] font-black font-space tracking-tighter", style.text)}>
+          {name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+        </span>
+      </div>
       {/* Rarity Glow Animation */}
       <div className={cn(
         "absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-2xl",
@@ -133,25 +139,25 @@ export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
 
       {/* Main Content Container */}
       <div className={cn(
-        "relative z-10 w-full h-full flex flex-col rounded-[1.8rem] overflow-hidden",
-        rarity === 'Mythic' ? "bg-[#0a0a0a] p-3" : "bg-transparent"
+        "relative z-10 w-full h-full flex flex-col rounded-[1.8rem] overflow-hidden p-1",
+        normalizedRarity === 'Mythic' ? "bg-[#0a0a0a] p-3" : "bg-transparent"
       )}>
         
-        {/* TOP: Rarity & ID */}
-        <div className="flex items-center justify-between mb-3 px-1">
+        {/* TOP: Rarity & ID - Shifted Right to avoid badge */}
+        <div className="flex items-center justify-end gap-3 mb-3 px-1">
+          <div className="text-[9px] font-mono text-zinc-500 tracking-tighter">
+            #{cardId.slice(-6).toUpperCase()}
+          </div>
           <div className={cn(
             "px-2.5 py-1 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest",
             style.text
           )}>
             {rarity}
           </div>
-          <div className="text-[9px] font-mono text-zinc-500 tracking-tighter">
-            #{cardId.slice(-6).toUpperCase()}
-          </div>
         </div>
 
-        <div className="relative flex-1 rounded-2xl overflow-hidden mb-4 border border-white/5 bg-zinc-900 shadow-inner group">
-          <CardArt card={props} className="w-full h-full" />
+        <div className="relative h-[180px] rounded-2xl overflow-hidden mb-3 border border-white/10 bg-zinc-950 shadow-2xl group/art z-1">
+          <CardArt card={props} className="w-full h-full scale-105 group-hover/art:scale-110 transition-transform duration-700" />
           
           {/* Finish Effects Overlays */}
           {finish === 'Holographic' && (
@@ -176,7 +182,7 @@ export const SolgineCard: React.FC<SolgineCardProps> = (props) => {
             </div>
           )}
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40" />
         </div>
 
         {/* BELOW ARTWORK: Name & Type */}
